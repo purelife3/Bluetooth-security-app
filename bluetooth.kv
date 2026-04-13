@@ -1,0 +1,663 @@
+<BluetoothDeviceItem>:
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: '60dp'
+    padding: '10dp'
+    spacing: '10dp'
+    
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: 0.7
+        
+        Label:
+            text: root.device_name
+            font_size: '16sp'
+            bold: True
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.width, None
+            size_hint_y: 0.6
+            
+        Label:
+            text: root.mac_address
+            font_size: '12sp'
+            color: 0.6, 0.6, 0.6, 1
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.width, None
+            size_hint_y: 0.4
+    
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: 0.3
+        spacing: '5dp'
+        
+        Label:
+            text: 'Connected' if root.is_connected else 'Disconnected'
+            font_size: '12sp'
+            color: (0, 0.8, 0, 1) if root.is_connected else (0.8, 0, 0, 1)
+            bold: True
+            halign: 'center'
+            valign: 'middle'
+            size_hint_y: 0.5
+            
+        Label:
+            text: 'Paired' if root.is_paired else 'Not Paired'
+            font_size: '10sp'
+            color: (0, 0.6, 0, 1) if root.is_paired else (0.6, 0.6, 0.6, 1)
+            halign: 'center'
+            valign: 'middle'
+            size_hint_y: 0.5
+
+<BluetoothAppLayout>:
+    orientation: 'vertical'
+    padding: '10dp'
+    spacing: '10dp'
+    
+    TabbedPanel:
+        id: main_tabs
+        do_default_tab: False
+        tab_width: self.width / 2
+        
+        TabbedPanelItem:
+            text: 'Basic Bluetooth'
+            
+            BoxLayout:
+                orientation: 'vertical'
+                padding: '10dp'
+                spacing: '10dp'
+                
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: '50dp'
+                    spacing: '10dp'
+                    
+                    Button:
+                        text: 'Scan Devices'
+                        on_press: root.scan_devices()
+                        background_color: 0.2, 0.6, 0.8, 1
+                        font_size: '14sp'
+                        bold: True
+                        
+                    Button:
+                        text: 'Toggle Bluetooth'
+                        on_press: root.toggle_bluetooth()
+                        background_color: 0.8, 0.5, 0.2, 1
+                        font_size: '14sp'
+                        bold: True
+                        
+                    Button:
+                        text: 'Clear Log'
+                        on_press: root.clear_log()
+                        background_color: 0.8, 0.2, 0.2, 1
+                        font_size: '14sp'
+                        bold: True
+                
+                ScrollView:
+                    size_hint: (1, 0.5)
+                    
+                    GridLayout:
+                        id: device_list
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: '5dp'
+                        padding: '5dp'
+                
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: 0.3
+                    spacing: '5dp'
+                    
+                    Label:
+                        text: 'Status Log:'
+                        font_size: '14sp'
+                        bold: True
+                        size_hint_y: None
+                        height: '30dp'
+                        color: 0.3, 0.3, 0.3, 1
+                        
+                    ScrollView:
+                        
+                        Label:
+                            id: status_log
+                            text: 'Bluetooth Manager Started\\nReady to scan devices...'
+                            font_size: '12sp'
+                            color: 0.4, 0.4, 0.4, 1
+                            halign: 'left'
+                            valign: 'top'
+                            text_size: self.width, None
+                            size_hint_y: None
+                            height: self.texture_size[1]
+        
+        TabbedPanelItem:
+            text: 'BLE Security Testing'
+            
+            BoxLayout:
+                orientation: 'vertical'
+                padding: '10dp'
+                spacing: '10dp'
+                
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: '50dp'
+                    spacing: '10dp'
+                    
+                    Button:
+                        text: 'Scan BLE Devices'
+                        on_press: root.scan_ble_devices()
+                        background_color: 0.4, 0.2, 0.8, 1
+                        font_size: '14sp'
+                        bold: True
+                        
+                    Button:
+                        text: 'Index Devices'
+                        on_press: root.index_ble_devices()
+                        background_color: 0.2, 0.8, 0.4, 1
+                        font_size: '14sp'
+                        bold: True
+                        
+                    Button:
+                        text: 'Clear BLE Log'
+                        on_press: root.clear_ble_log()
+                        background_color: 0.8, 0.2, 0.2, 1
+                        font_size: '14sp'
+                        bold: True
+                
+                ScrollView:
+                    size_hint: (1, 0.4)
+                    
+                    GridLayout:
+                        id: ble_device_list
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: '5dp'
+                        padding: '5dp'
+                
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: 0.3
+                    spacing: '5dp'
+                    
+                    Label:
+                        text: 'Device Index by Type:'
+                        font_size: '14sp'
+                        bold: True
+                        size_hint_y: None
+                        height: '30dp'
+                        color: 0.3, 0.3, 0.3, 1
+                        
+                    ScrollView:
+                        
+                        Label:
+                            id: device_index_display
+                            text: 'No device index available.\nClick "Index Devices" to generate.'
+                            font_size: '12sp'
+                            color: 0.4, 0.4, 0.4, 1
+                            halign: 'left'
+                            valign: 'top'
+                            text_size: self.width, None
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: 0.3
+                    spacing: '5dp'
+                    
+                    Label:
+                        text: 'BLE Security Log:'
+                        font_size: '14sp'
+                        bold: True
+                        size_hint_y: None
+                        height: '30dp'
+                        color: 0.3, 0.3, 0.3, 1
+                        
+                    ScrollView:
+                        
+                        Label:
+                            id: ble_security_log
+                            text: 'BLE Security Module Ready\nClick "Scan BLE Devices" to start.'
+                            font_size: '12sp'
+                            color: 0.4, 0.4, 0.4, 1
+                            halign: 'left'
+                            valign: 'top'
+                            text_size: self.width, None
+                            size_hint_y: None
+                            height: self.texture_size[1]
+
+        TabbedPanelItem:
+            text: 'Windows Exploits'
+            
+            BoxLayout:
+                orientation: 'vertical'
+                padding: '10dp'
+                spacing: '10dp'
+                
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: '50dp'
+                    spacing: '10dp'
+                    
+                    Button:
+                        text: 'Load Windows Exploits'
+                        on_press: root.load_windows_exploits()
+                        background_color: 0.2, 0.4, 0.8, 1
+                        font_size: '14sp'
+                        bold: True
+                        
+                    Button:
+                        text: 'Clear Exploits'
+                        on_press: root.clear_windows_exploits()
+                        background_color: 0.8, 0.2, 0.2, 1
+                        font_size: '14sp'
+                        bold: True
+                
+                Label:
+                    text: 'Windows Device Exploits:'
+                    font_size: '16sp'
+                    bold: True
+                    size_hint_y: None
+                    height: '40dp'
+                    color: 0.2, 0.2, 0.6, 1
+                    halign: 'center'
+                    valign: 'middle'
+                
+                ScrollView:
+                    size_hint: (1, 0.6)
+                    
+                    GridLayout:
+                        id: windows_exploits_grid
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: '5dp'
+                        padding: '5dp'
+                
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: 0.3
+                    spacing: '5dp'
+                    
+                    Label:
+                        text: 'Windows Exploit Log:'
+                        font_size: '14sp'
+                        bold: True
+                        size_hint_y: None
+                        height: '30dp'
+                        color: 0.3, 0.3, 0.3, 1
+                        
+                    ScrollView:
+                        
+                        Label:
+                            id: windows_exploit_log
+                            text: 'Windows exploit module ready.\nClick "Load Windows Exploits" to start.'
+                            font_size: '12sp'
+                            color: 0.4, 0.4, 0.4, 1
+                            halign: 'left'
+                            valign: 'top'
+                            text_size: self.width, None
+                            size_hint_y: None
+                            height: self.texture_size[1]
+
+        TabbedPanelItem:
+            text: 'Mock Devices'
+            
+            BoxLayout:
+                orientation: 'vertical'
+                padding: '10dp'
+                spacing: '10dp'
+                
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: '50dp'
+                    spacing: '10dp'
+                    
+                    Button:
+                        text: 'Create Mock Device'
+                        on_press: root.create_mock_device()
+                        background_color: 0.4, 0.8, 0.2, 1
+                        font_size: '14sp'
+                        bold: True
+                        
+                    Button:
+                        text: 'Clear Mock Devices'
+                        on_press: root.clear_mock_devices()
+                        background_color: 0.8, 0.2, 0.2, 1
+                        font_size: '14sp'
+                        bold: True
+                
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: '40dp'
+                    spacing: '10dp'
+                    
+                    Label:
+                        text: 'Device Type:'
+                        font_size: '14sp'
+                        bold: True
+                        size_hint_x: 0.3
+                        halign: 'right'
+                        valign: 'middle'
+                    
+                    Spinner:
+                        id: mock_device_type_spinner
+                        text: 'WINDOWS'
+                        values: ['WINDOWS', 'APPLE', 'ANDROID', 'WEARABLE', 'IOT', 'MEDICAL', 'AUDIO']
+                        size_hint_x: 0.7
+                        font_size: '14sp'
+                
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: '40dp'
+                    spacing: '10dp'
+                    
+                    Label:
+                        text: 'Device Name:'
+                        font_size: '14sp'
+                        bold: True
+                        size_hint_x: 0.3
+                        halign: 'right'
+                        valign: 'middle'
+                    
+                    TextInput:
+                        id: mock_device_name_input
+                        text: 'Mock Windows Device'
+                        hint_text: 'Enter device name'
+                        size_hint_x: 0.7
+                        font_size: '14sp'
+                        multiline: False
+                
+                Label:
+                    text: 'Mock Bluetooth/BLE Devices:'
+                    font_size: '16sp'
+                    bold: True
+                    size_hint_y: None
+                    height: '40dp'
+                    color: 0.2, 0.6, 0.2, 1
+                    halign: 'center'
+                    valign: 'middle'
+                
+                ScrollView:
+                    size_hint: (1, 0.5)
+                    
+                    GridLayout:
+                        id: mock_devices_grid
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: '5dp'
+                        padding: '5dp'
+                
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: 0.3
+                    spacing: '5dp'
+                    
+                    Label:
+                        text: 'Mock Device Log:'
+                        font_size: '14sp'
+                        bold: True
+                        size_hint_y: None
+                        height: '30dp'
+                        color: 0.3, 0.3, 0.3, 1
+                        
+                    ScrollView:
+                        
+                        Label:
+                            id: mock_device_log
+                            text: 'Mock device module ready.\nCreate a mock device to start.'
+                            font_size: '12sp'
+                            color: 0.4, 0.4, 0.4, 1
+                            halign: 'left'
+                            valign: 'top'
+                            text_size: self.width, None
+                            size_hint_y: None
+                            height: self.texture_size[1]
+
+        TabbedPanelItem:
+            text: 'Debug Logging'
+            
+            BoxLayout:
+                orientation: 'vertical'
+                padding: '10dp'
+                spacing: '10dp'
+                
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: '50dp'
+                    spacing: '10dp'
+                    
+                    Button:
+                        text: 'Refresh Log'
+                        on_press: root.refresh_debug_log()
+                        background_color: 0.2, 0.6, 0.8, 1
+                        font_size: '14sp'
+                        bold: True
+                        
+                    Button:
+                        text: 'Clear Log'
+                        on_press: root.clear_debug_log()
+                        background_color: 0.8, 0.2, 0.2, 1
+                        font_size: '14sp'
+                        bold: True
+                        
+                    Button:
+                        text: 'Export Log'
+                        on_press: root.export_debug_log()
+                        background_color: 0.4, 0.2, 0.8, 1
+                        font_size: '14sp'
+                        bold: True
+                
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: '40dp'
+                    spacing: '10dp'
+                    
+                    Label:
+                        text: 'Log Level:'
+                        font_size: '14sp'
+                        bold: True
+                        size_hint_x: 0.3
+                        halign: 'right'
+                        valign: 'middle'
+                    
+                    Spinner:
+                        id: debug_log_level_spinner
+                        text: 'INFO'
+                        values: ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+                        size_hint_x: 0.7
+                        font_size: '14sp'
+                        on_text: root.set_debug_log_level(self.text)
+                
+                Label:
+                    text: 'Debug Log Entries:'
+                    font_size: '16sp'
+                    bold: True
+                    size_hint_y: None
+                    height: '40dp'
+                    color: 0.6, 0.2, 0.2, 1
+                    halign: 'center'
+                    valign: 'middle'
+                
+                ScrollView:
+                    size_hint: (1, 0.6)
+                    
+                    GridLayout:
+                        id: debug_log_grid
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: '2dp'
+                        padding: '5dp'
+                
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: '30dp'
+                    spacing: '10dp'
+                    
+                    Label:
+                        text: 'Total Entries: 0'
+                        id: debug_log_count_label
+                        font_size: '12sp'
+                        color: 0.4, 0.4, 0.4, 1
+                        size_hint_x: 0.5
+                        halign: 'left'
+                        valign: 'middle'
+                    
+                    Label:
+                        text: 'Last Updated: --'
+                        id: debug_log_timestamp_label
+                        font_size: '12sp'
+                        color: 0.4, 0.4, 0.4, 1
+                        size_hint_x: 0.5
+                        halign: 'right'
+                        valign: 'middle'
+
+<BLEDeviceItem>:
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: '80dp'
+    padding: '10dp'
+    spacing: '10dp'
+    
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: 0.6
+        
+        Label:
+            text: root.device_name
+            font_size: '16sp'
+            bold: True
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.width, None
+            size_hint_y: 0.4
+            
+        Label:
+            text: root.mac_address
+            font_size: '12sp'
+            color: 0.6, 0.6, 0.6, 1
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.width, None
+            size_hint_y: 0.3
+            
+        Label:
+            text: root.device_type
+            font_size: '11sp'
+            color: 0.4, 0.4, 0.8, 1
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.width, None
+            size_hint_y: 0.3
+    
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: 0.4
+        spacing: '5dp'
+        
+        Button:
+            text: 'Show Exploits'
+            on_press: root.show_exploits()
+            background_color: 0.8, 0.4, 0.2, 1
+            font_size: '11sp'
+            bold: True
+            size_hint_y: 0.5
+            
+        Label:
+            text: 'Security: ' + root.security_level
+            font_size: '10sp'
+            color: (0.8, 0, 0, 1) if root.security_level == 'LOW' else (0.8, 0.8, 0, 1) if root.security_level == 'MEDIUM' else (0, 0.8, 0, 1)
+            bold: True
+            halign: 'center'
+            valign: 'middle'
+            size_hint_y: 0.5
+
+<ExploitPopup>:
+    size_hint: (0.9, 0.8)
+    title: 'Available Exploits for ' + root.device_name
+    auto_dismiss: False
+    
+    BoxLayout:
+        orientation: 'vertical'
+        padding: '10dp'
+        spacing: '10dp'
+        
+        ScrollView:
+            
+            GridLayout:
+                id: exploit_buttons_grid
+                cols: 1
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: '5dp'
+                padding: '5dp'
+        
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: '50dp'
+            spacing: '10dp'
+            
+            Button:
+                text: 'Close'
+                on_press: root.dismiss()
+                background_color: 0.6, 0.6, 0.6, 1
+                font_size: '14sp'
+                
+            Button:
+                text: 'Run All Exploits'
+                on_press: root.run_all_exploits()
+                background_color: 0.8, 0.2, 0.2, 1
+                font_size: '14sp'
+                bold: True
+
+<ExploitButton>:
+    size_hint_y: None
+    height: '60dp'
+    
+    BoxLayout:
+        orientation: 'horizontal'
+        padding: '5dp'
+        spacing: '10dp'
+        
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: 0.7
+            
+            Label:
+                text: root.exploit_name
+                font_size: '14sp'
+                bold: True
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.width, None
+                size_hint_y: 0.6
+                
+            Label:
+                text: 'Severity: ' + root.severity + ' | Target: ' + root.target_device
+                font_size: '10sp'
+                color: 0.5, 0.5, 0.5, 1
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.width, None
+                size_hint_y: 0.4
+        
+        Button:
+            text: root.button_text
+            on_press: root.run_exploit()
+            background_color: (0.8, 0.2, 0.2, 1) if root.severity == 'CRITICAL' else (0.8, 0.5, 0.2, 1) if root.severity == 'HIGH' else (0.8, 0.8, 0.2, 1) if root.severity == 'MEDIUM' else (0.2, 0.6, 0.8, 1)
+            font_size: '12sp'
+            bold: True
+            size_hint_x: 0.3

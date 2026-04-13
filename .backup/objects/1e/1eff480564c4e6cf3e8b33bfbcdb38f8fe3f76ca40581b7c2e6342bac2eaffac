@@ -1,0 +1,67 @@
+# Android Bluetooth App Project
+
+This is an Android Bluetooth application project built with Python/Kivy for cross-platform development.
+
+## Project Overview
+
+A Bluetooth management application for Android that allows:
+- Scanning for nearby Bluetooth devices
+- Connecting to Bluetooth devices
+- Managing paired devices
+- Sending/receiving data via Bluetooth
+
+## Project Structure
+
+- `main.py` - Main application entry point
+- `requirements.txt` - Python dependencies
+- `android/` - Android-specific configurations
+- `ui/` - User interface components
+- `bluetooth/` - Bluetooth management module
+
+## Quick Start
+
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Run the Application
+```bash
+python main.py
+```
+
+### 3. Build for Android
+```bash
+buildozer android debug
+```
+
+## Features
+
+- **Device Discovery**: Scan and list nearby Bluetooth devices
+- **Connection Management**: Connect/disconnect from devices
+- **Data Transfer**: Send and receive data via Bluetooth
+- **Device Pairing**: Manage paired devices list
+- **Cross-platform**: Works on Android, iOS, Windows, Linux, macOS
+
+## Requirements
+
+- Python 3.8+
+- Kivy framework
+- Pyjnius (for Android Bluetooth API access)
+- Android SDK/NDK (for building APK)
+
+## Development Notes
+
+- Uses Kivy's Bluetooth API for cross-platform compatibility
+- Android-specific features require Pyjnius for Java API access
+- Test on actual Android device for full functionality
+
+## Next Steps
+
+1. Implement Bluetooth scanning functionality
+2. Add device connection management
+3. Create user interface for device list
+4. Implement data transfer features
+5. Add Android permissions handling
+
+Happy Coding! 📱

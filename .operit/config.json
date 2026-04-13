@@ -1,0 +1,55 @@
+{
+    "projectType": "python",
+    "title": "Python Project",
+    "description": "Supports virtual environments and pip package management, suitable for data analysis and development",
+    "server": {
+        "enabled": false,
+        "port": 8000,
+        "autoStart": false
+    },
+    "preview": {
+        "type": "terminal",
+        "url": "",
+        "showPreviewButton": false
+    },
+    "commands": [
+        {
+            "id": "venv_create",
+            "label": "Create Virtual Environment",
+            "command": "python -m venv venv",
+            "workingDir": ".",
+            "shell": true
+        },
+        {
+            "id": "venv_activate",
+            "label": "Activate Virtual Environment",
+            "command": "source venv/bin/activate || venv\\Scripts\\activate",
+            "workingDir": ".",
+            "shell": true
+        },
+        {
+            "id": "pip_install",
+            "label": "Install Dependencies",
+            "command": "pip install -r requirements.txt",
+            "workingDir": ".",
+            "shell": true
+        },
+        {
+            "id": "pip_list",
+            "label": "View Installed Packages",
+            "command": "pip list",
+            "workingDir": ".",
+            "shell": true
+        },
+        {
+            "id": "python_run",
+            "label": "Run main.py",
+            "command": "python main.py",
+            "workingDir": ".",
+            "shell": true
+        }
+    ],
+    "export": {
+        "enabled": false
+    }
+}

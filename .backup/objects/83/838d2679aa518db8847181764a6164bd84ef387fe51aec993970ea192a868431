@@ -1,0 +1,52 @@
+# Bluetooth Security Testing App
+
+A Kivy-based Android application for Bluetooth security testing and analysis.
+
+## Features
+
+- **Bluetooth Device Scanning**: Discover nearby Bluetooth devices
+- **BLE Service Discovery**: Analyze Bluetooth Low Energy services and characteristics
+- **Security Assessment**: Evaluate device security configurations
+- **Vulnerability Testing**: Test for common Bluetooth vulnerabilities
+- **Windows Device Exploits**: Specialized exploits for Windows Bluetooth devices
+- **Mock Device Creation**: Create mock Bluetooth/BLE devices for testing
+- **Debug Logging**: Comprehensive logging system with export functionality
+
+## Requirements
+
+- Python 3.x
+- Kivy 2.3.0
+- Plyer
+- Pyjnius
+- Android SDK/NDK (for APK building)
+
+## Installation
+
+1. Clone the repository
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run the app: `python main.py`
+
+## Building for Android
+
+Use Buildozer to create an APK:
+
+```bash
+buildozer android debug
+```
+
+## APK Deployment
+
+The APK file should be placed in `/sdcard/Documents/` or `/sdcard/Download/` for easy installation on Android devices.
+
+## Permissions
+
+The app requires the following Android permissions:
+- BLUETOOTH
+- BLUETOOTH_ADMIN  
+- BLUETOOTH_SCAN
+- BLUETOOTH_CONNECT
+- ACCESS_FINE_LOCATION
+
+## License
+
+MIT

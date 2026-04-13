@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Android Bluetooth App
+A Bluetooth management application for Android built with Kivy
+"""
+
+import kivy
+kivy.require('2.3.0')
+
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.gridlayout import GridLayout
+from kivy.clock import Clock
+from kivy.properties import StringProperty, ListProperty, BooleanProperty, NumericProperty
+from kivy.lang import Builder
+
+# Try to import Bluetooth modules
+try:
+    from plyer import bluetooth
+    BLUETOOTH_AVAILABLE = True
+except ImportError:
+    BLUETOOTH_AVAILABLE = False
+    print("Warning: plyer.bluetooth not available. Using mock data.")
+
+# Load Kivy language file
+Builder.load_file('bluetooth.kv')
+
+class BluetoothDeviceItem(BoxLayout):
+    """Widget for displaying a Bluetooth device - matches bluetooth.kv definition"""
+    device_name = StringProperty("Unknown Device")
+    mac_address = StringProperty("00:00:00:00:00:00")
+    is_connected = BooleanProperty(False)
+    is_paired = BooleanProperty(False)
+    device_type = StringProperty("Unknown")
+    
+    def __init__(self, device_info=None, **kwargs):
+        super().__init__(**kwargs)
+        if device_info:
+            self.device_name = device_info.get('name', 'Unknown Device')
+            self.mac_address = device_info.get('address', '00:00:00:00:00:00')
+            self.device_type = device_info.get('type', 'Unknown')
+            self.is_paired = device_info.get('paired', False)
+            self.is_connected = device_info.get('connected', False)
+    
+    def on_touch_down(self, touch):
+        """Handle touch events on device item"""
+        if self.collide_point(*touch.pos):
+            print(f"Selected device: {self.device_name} ({self.mac_address})")
+            # In a real app, you would set this as the selected device
+            return True
+        return super().on_touch_down(touch)
+
+class BluetoothAppLayout(BoxLayout):
+    """Main application layout - matches bluetooth.kv definition"""
+    status_text = StringProperty("Bluetooth Manager Started")
+    devices = ListProperty([])
+    is_scanning = BooleanProperty(False)
+    bluetooth_enabled = BooleanProperty(False)
+    selected_device = None
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Initialize Bluetooth if available
+        if BLUETOOTH_AVAILABLE:
+            self.init_bluetooth()
+        else:
+            print("Warning: Bluetooth API not available. Using mock data.")
+            self.add_mock_devices()
+    
+    def init_bluetooth(self):
+        """Initialize Bluetooth functionality"""
+        try:
+            # Check if Bluetooth is available on the device
+            self.bluetooth_enabled = True  # This would be checked via plyer
+            print("Bluetooth initialized")
+        except Exception as e:
+            print(f"Error initializing Bluetooth: {str(e)}")
+            self.bluetooth_enabled = False
+    
+    def log(self, message):
+        """Add message to status log - updates the status_log label in kv file"""
+        print(f"LOG: {message}")
+        # Update the status_log label in the kv file
+        if hasattr(self, 'ids') and 'status_log' in self.ids:
+            current_text = self.ids.status_log.text
+            self.ids.status_log.text = f"{current_text}\n{message}"
+    
+    def clear_log(self):
+        """Clear the status log"""
+        if hasattr(self, 'ids') and 'status_log' in self.ids:
+            self.ids.status_log.text = "Log cleared\n"
+        print("Log cleared")
+    
+    def add_mock_devices(self):
+        """Add mock Bluetooth devices for testing and display them in UI"""
+        mock_devices = [
+            {"name": "Wireless Headphones", "address": "AA:BB:CC:11:22:33", "type": "Audio", "paired": True, "connected": True},
+            {"name": "Smart Watch", "address": "DD:EE:FF:44:55:66", "type": "Wearable", "paired": True, "connected": False},
+            {"name": "Car Audio", "address": "11:22:33:AA:BB:CC", "type": "Audio", "paired": False, "connected": False},
+            {"name": "Keyboard", "address": "44:55:66:DD:EE:FF", "type": "HID", "paired": True, "connected": True},
+            {"name": "Fitness Tracker", "address": "77:88:99:00:11:22", "type": "Wearable", "paired": False, "connected": False},
+        ]
+        
+        for device_info in mock_devices:
+            # Create device item widget
+            device_item = BluetoothDeviceItem(device_info=device_info)
+            
+            # Add to devices list
+            self.devices.append(device_info)
+            
+            # Add to UI if device_list exists
+            if hasattr(self, 'ids') and 'device_list' in self.ids:
+                self.ids.device_list.add_widget(device_item)
+        
+        self.log(f"Added {len(mock_devices)} mock devices to UI")
+    
+    def scan_devices(self):
+        """Scan for nearby Bluetooth devices - called from kv file button"""
+        self.log("Scanning for Bluetooth devices...")
+        
+        if BLUETOOTH_AVAILABLE:
+            try:
+                # Clear existing devices from the device_list GridLayout
+                if hasattr(self, 'ids') and 'device_list' in self.ids:
+                    self.ids.device_list.clear_widgets()
+                
+                # Clear devices list
+                self.devices = []
+                
+                # Start scanning (this would use actual Bluetooth API)
+                self.log("Bluetooth scanning started")
+                # In a real app, you would use: bluetooth.start_scan()
+                
+                # Simulate finding devices
+                Clock.schedule_once(self.simulate_scan_results, 2)
+                
+            except Exception as e:
+                self.log(f"Error scanning: {str(e)}")
+                self.add_mock_devices()
+        else:
+            self.log("Bluetooth not available - showing mock devices")
+            self.add_mock_devices()
+    
+    def simulate_scan_results(self, dt):
+        """Simulate finding Bluetooth devices"""
+        self.log("Scan complete: Found 5 devices")
+        
+        # Add mock devices to the UI
+        self.add_mock_devices()
+    
+    def connect_to_device(self, device_item):
+        """Connect to selected device"""
+        if device_item:
+            self.log(f"Connecting to {device_item.device_name}...")
+            device_item.is_connected = True
+            self.selected_device = device_item
+    
+    def disconnect_device(self, device_item):
+        """Disconnect from current device"""
+        if device_item:
+            self.log(f"Disconnecting from {device_item.device_name}...")
+            device_item.is_connected = False
+            if self.selected_device == device_item:
+                self.selected_device = None
+    
+    def toggle_bluetooth(self):
+        """Toggle Bluetooth on/off - called from kv file button"""
+        self.log("Toggling Bluetooth...")
+        self.bluetooth_enabled = not self.bluetooth_enabled
+        
+        if self.bluetooth_enabled:
+            self.log("Bluetooth turned ON")
+            # Initialize Bluetooth when turned on
+            if BLUETOOTH_AVAILABLE:
+                self.init_bluetooth()
+        else:
+            self.log("Bluetooth turned OFF")
+            # Clear devices when Bluetooth is off
+            if hasattr(self, 'ids') and 'device_list' in self.ids:
+                self.ids.device_list.clear_widgets()
+            self.devices = []
+
+class BluetoothApp(App):
+    """Main application class"""
+    def build(self):
+        self.title = "Android Bluetooth Manager"
+        return BluetoothAppLayout()
+    
+    def on_start(self):
+        """Called when the app starts"""
+        print("Bluetooth App started")
+    
+    def on_stop(self):
+        """Called when the app stops"""
+        print("Bluetooth App stopped")
+
+if __name__ == "__main__":
+    print("Starting Android Bluetooth App...")
+    print(f"Bluetooth available: {BLUETOOTH_AVAILABLE}")
+    
+    # Check Android permissions
+    if BLUETOOTH_AVAILABLE:
+        print("Note: On Android, you need to request Bluetooth permissions")
+        print("Add these to your AndroidManifest.xml:")
+        print("  <uses-permission android:name=\"android.permission.BLUETOOTH\" />")
+        print("  <uses-permission android:name=\"android.permission.BLUETOOTH_ADMIN\" />")
+        print("  <uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\" />")
+    
+    BluetoothApp().run()
