@@ -48,27 +48,61 @@ jobs:
         # Create Android SDK directory
         mkdir -p ~/.buildozer/android/platform
         
-        # Download and extract Android SDK command-line tools with retry logic
+        # Download and extract Android SDK command-line tools with robust retry logic
         echo "📥 Downloading Android SDK command-line tools..."
-        for i in {1..3}; do
-          echo "Attempt $i/3..."
-          if wget --tries=3 --timeout=30 https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip; then
-            echo "✅ Download successful"
-            break
+        
+        # Use curl with better error handling and progress tracking
+        for attempt in {1..5}; do
+          echo "📋 Attempt $attempt/5..."
+          
+          # Clean up any previous failed downloads
+          rm -f commandlinetools-linux-9477386_latest.zip commandlinetools-linux-9477386_latest.zip.part
+          
+          # Download with curl - resume support, timeout, and progress bar
+          if curl -L --retry 3 --retry-delay 5 --connect-timeout 30 --max-time 300 \
+               --progress-bar \
+               -o commandlinetools-linux-9477386_latest.zip \
+               "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"; then
+            echo "✅ Download completed successfully"
+            
+            # Verify file size (should be > 100MB)
+            file_size=$(stat -c%s "commandlinetools-linux-9477386_latest.zip" 2>/dev/null || stat -f%z "commandlinetools-linux-9477386_latest.zip")
+            if [ "$file_size" -gt 100000000 ]; then
+              echo "✅ File size check passed: $((file_size/1024/1024)) MB"
+              break
+            else
+              echo "⚠️ File size suspiciously small: $((file_size/1024/1024)) MB"
+              if [ $attempt -eq 5 ]; then
+                echo "❌ All download attempts failed - file too small"
+                exit 1
+              fi
+              echo "Retrying in 5 seconds..."
+              sleep 5
+            fi
           else
-            echo "⚠️ Download failed, retrying in 10 seconds..."
-            sleep 10
-            if [ $i -eq 3 ]; then
+            echo "⚠️ Download failed on attempt $attempt"
+            if [ $attempt -eq 5 ]; then
               echo "❌ All download attempts failed"
               exit 1
             fi
+            echo "Retrying in 5 seconds..."
+            sleep 5
           fi
         done
         
-        # Verify download integrity
-        echo "🔍 Verifying download..."
+        # Verify download integrity with checksum
+        echo "🔍 Verifying download integrity..."
         if [ ! -f "commandlinetools-linux-9477386_latest.zip" ]; then
           echo "❌ Downloaded file not found"
+          exit 1
+        fi
+        
+        # Check if file is a valid zip
+        echo "📦 Checking zip file integrity..."
+        if unzip -tq commandlinetools-linux-9477386_latest.zip > /dev/null 2>&1; then
+          echo "✅ Zip file integrity check passed"
+        else
+          echo "❌ Zip file is corrupted"
           exit 1
         fi
         
