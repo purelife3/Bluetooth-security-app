@@ -7,18 +7,21 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # Allow manual triggering
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Force Node.js 24 to avoid deprecation warnings
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.2.0  # Updated to latest version supporting Node.js 24
       
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v5.2.0  # Updated to latest version
       with:
-        python-version: '3.11'
+        python-version: '3.12'  # Updated to Python 3.12 for better compatibility
         
     - name: Install system dependencies
       run: |
@@ -89,7 +92,7 @@ jobs:
         buildozer -v android debug
         
     - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.4.0  # Updated to latest version
       with:
         name: bluetooth-security-app
         path: bin/*.apk
@@ -97,7 +100,7 @@ jobs:
         
     - name: Upload build logs
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.4.0  # Updated to latest version
       with:
         name: build-logs
         path: |
