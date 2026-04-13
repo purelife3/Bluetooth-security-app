@@ -90,7 +90,7 @@ android.manifest_merger_extra = |
 
 # Explicit paths to pre-downloaded SDK/NDK (added by fix_buildozer_config.sh)
 android.sdk_path = ~/.buildozer/android/sdk
-android.ndk_path = ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+android.ndk_path = ~/.buildozer/android/sdk/ndk/25.1.8937393
 android.ant_path = ~/.buildozer/android/platform/apache-ant-1.9.4
 
 # Skip SDK/NDK downloads (we pre-download them)

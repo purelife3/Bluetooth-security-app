@@ -18,7 +18,7 @@ warn_on_root = 0
 
 # Android SDK/NDK configuration
 android.sdk_path = $HOME_DIR/.buildozer/android/sdk
-android.ndk_path = $HOME_DIR/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+android.ndk_path = $HOME_DIR/.buildozer/android/sdk/ndk/25.1.8937393
 android.ant_path = $HOME_DIR/.buildozer/android/platform/apache-ant-1.9.4
 android.sdkmanager_path = $HOME_DIR/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager
 
@@ -57,7 +57,7 @@ if [ -f "buildozer.spec" ]; then
 
 # Explicit paths to pre-downloaded SDK/NDK (added by fix_buildozer_config.sh)
 android.sdk_path = ~/.buildozer/android/sdk
-android.ndk_path = ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+android.ndk_path = ~/.buildozer/android/sdk/ndk/25.1.8937393
 android.ant_path = ~/.buildozer/android/platform/apache-ant-1.9.4
 
 # Skip SDK/NDK downloads (we pre-download them)
@@ -84,13 +84,13 @@ echo "🔧 Setting up Buildozer environment..."
 # Set environment variables
 export ANDROID_HOME="$HOME/.buildozer/android/sdk"
 export ANDROID_SDK_ROOT="$HOME/.buildozer/android/sdk"
-export ANDROID_NDK_HOME="$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
-export ANDROID_NDK_ROOT="$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+export ANDROID_NDK_HOME="$HOME/.buildozer/android/sdk/ndk/25.1.8937393"
+export ANDROID_NDK_ROOT="$HOME/.buildozer/android/sdk/ndk/25.1.8937393"
 export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_NDK_HOME"
 
 # Create Buildozer directories
 mkdir -p "$HOME/.buildozer/android/sdk"
-mkdir -p "$HOME/.buildozer/android/platform/android-ndk"
+mkdir -p "$HOME/.buildozer/android/sdk/ndk/25.1.8937393"
 mkdir -p "$HOME/.buildozer/android/platform/apache-ant-1.9.4"
 
 # Verify environment
@@ -203,15 +203,15 @@ fi
 
 # Check for NDK
 echo "🔍 Checking Android NDK:"
-if [ -d ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393 ]; then
+if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
     echo "✅ Android NDK directory exists"
-    echo "   NDK path: ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+    echo "   NDK path: ~/.buildozer/android/sdk/ndk/25.1.8937393"
     # Check for key NDK files
-    if [ -f ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393/ndk-build ]; then
+    if [ -f ~/.buildozer/android/sdk/ndk/25.1.8937393/ndk-build ]; then
         echo "✅ ndk-build found"
     else
         echo "⚠️ ndk-build not found (checking for alternative structure)"
-        find ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393 -name "*ndk-build*" -type f 2>/dev/null | head -3
+        find ~/.buildozer/android/sdk/ndk/25.1.8937393 -name "*ndk-build*" -type f 2>/dev/null | head -3
     fi
 else
     echo "⚠️ Android NDK directory not found"

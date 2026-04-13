@@ -5,13 +5,13 @@ echo "🔧 Setting up Buildozer environment..."
 # Set environment variables
 export ANDROID_HOME="$HOME/.buildozer/android/sdk"
 export ANDROID_SDK_ROOT="$HOME/.buildozer/android/sdk"
-export ANDROID_NDK_HOME="$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
-export ANDROID_NDK_ROOT="$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+export ANDROID_NDK_HOME="$HOME/.buildozer/android/sdk/ndk/25.1.8937393"
+export ANDROID_NDK_ROOT="$HOME/.buildozer/android/sdk/ndk/25.1.8937393"
 export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_NDK_HOME"
 
 # Create Buildozer directories
 mkdir -p "$HOME/.buildozer/android/sdk"
-mkdir -p "$HOME/.buildozer/android/platform/android-ndk"
+mkdir -p "$HOME/.buildozer/android/sdk/ndk/25.1.8937393"
 mkdir -p "$HOME/.buildozer/android/platform/apache-ant-1.9.4"
 
 # Verify environment

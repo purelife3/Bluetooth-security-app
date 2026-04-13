@@ -80,15 +80,15 @@ fi
 
 # Check for NDK
 echo "🔍 Checking Android NDK:"
-if [ -d ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393 ]; then
+if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
     echo "✅ Android NDK directory exists"
-    echo "   NDK path: ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+    echo "   NDK path: ~/.buildozer/android/sdk/ndk/25.1.8937393"
     # Check for key NDK files
-    if [ -f ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393/ndk-build ]; then
+    if [ -f ~/.buildozer/android/sdk/ndk/25.1.8937393/ndk-build ]; then
         echo "✅ ndk-build found"
     else
         echo "⚠️ ndk-build not found (checking for alternative structure)"
-        find ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393 -name "*ndk-build*" -type f 2>/dev/null | head -3
+        find ~/.buildozer/android/sdk/ndk/25.1.8937393 -name "*ndk-build*" -type f 2>/dev/null | head -3
     fi
 else
     echo "⚠️ Android NDK directory not found"
