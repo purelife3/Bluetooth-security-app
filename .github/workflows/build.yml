@@ -47,8 +47,8 @@ jobs:
         
     - name: Set up Android SDK/NDK
       run: |
-        # Create Android SDK directory
-        mkdir -p ~/.buildozer/android/platform
+        # Create Android SDK directory (use sdk directory, not platform)
+        mkdir -p ~/.buildozer/android/sdk
         
         # Download and extract Android SDK command-line tools with robust retry logic
         echo "📥 Downloading Android SDK command-line tools..."
@@ -151,8 +151,8 @@ jobs:
       run: |
         echo "📥 Pre-downloading Android NDK to avoid 'read of closed file' errors..."
         
-        # Create NDK directory
-        mkdir -p ~/.buildozer/android/platform/android-ndk
+        # Create NDK directory (use sdk/ndk structure, not platform)
+        mkdir -p ~/.buildozer/android/sdk/ndk/25.1.8937393
         
         # Try multiple NDK download URLs - Google's URLs can be tricky
         # First, let's check what Buildozer actually tries to download
@@ -180,10 +180,6 @@ jobs:
         if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
           echo "✅ NDK downloaded successfully via sdkmanager!"
           echo "📊 NDK location: ~/.buildozer/android/sdk/ndk/25.1.8937393"
-          
-          # Create a symlink to Buildozer's expected location
-          echo "🔗 Creating symlink for Buildozer..."
-          ln -sf ~/.buildozer/android/sdk/ndk/25.1.8937393 ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
           
           echo "✅ Android NDK setup completed via sdkmanager!"
         else
@@ -213,12 +209,13 @@ jobs:
             if [ "$file_size" -gt 1000000000 ]; then
               echo "✅ NDK file size check passed: $((file_size/1024/1024)) MB"
               
-              # Extract NDK
+              # Extract NDK to sdk directory structure
               echo "📦 Extracting NDK..."
-              unzip -q "$NDK_FILE" -d ~/.buildozer/android/platform/android-ndk/
+              mkdir -p ~/.buildozer/android/sdk/ndk/25.1.8937393
+              unzip -q "$NDK_FILE" -d /tmp/
               
-              # Create expected directory structure
-              mv ~/.buildozer/android/platform/android-ndk/android-ndk-r25b ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+              # Move NDK to correct location
+              mv /tmp/android-ndk-r25b/* ~/.buildozer/android/sdk/ndk/25.1.8937393/
               
               echo "✅ NDK fallback download successful!"
             else
