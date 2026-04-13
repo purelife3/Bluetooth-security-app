@@ -40,35 +40,40 @@ EOF
 
 echo "✅ Buildozer default configuration created"
 
-# Update buildozer.spec with explicit paths
-echo "📝 Updating buildozer.spec with explicit paths..."
+# Check buildozer.spec but don't add duplicate entries
+echo "📝 Checking buildozer.spec for duplicate configurations..."
 if [ -f "buildozer.spec" ]; then
-    # Backup original spec
-    cp buildozer.spec buildozer.spec.backup
-    
-    # Read current spec and add missing configurations
     echo "🔍 Current buildozer.spec analysis:"
     echo "   Lines: $(wc -l < buildozer.spec)"
-    echo "   Has android.sdk_path? $(grep -q 'android.sdk_path' buildozer.spec && echo 'YES' || echo 'NO')"
-    echo "   Has android.ndk_path? $(grep -q 'android.ndk_path' buildozer.spec && echo 'YES' || echo 'NO')"
     
-    # Create updated spec by appending missing configurations
-    cat >> buildozer.spec << 'EOF'
-
-# Explicit paths to pre-downloaded SDK/NDK (added by fix_buildozer_config.sh)
-android.sdk_path = ~/.buildozer/android/sdk
-android.ndk_path = ~/.buildozer/android/sdk/ndk/25.1.8937393
-android.ant_path = ~/.buildozer/android/platform/apache-ant-1.9.4
-
-# Skip SDK/NDK downloads (we pre-download them)
-android.skip_update = True
-android.accept_sdk_license = True
-EOF
+    # Check for duplicate entries that should only be in default.cfg
+    if grep -q 'android.sdk_path' buildozer.spec; then
+        echo "⚠️ Warning: android.sdk_path found in buildozer.spec"
+        echo "   This may cause DuplicateOptionError with default.cfg"
+        echo "   Consider removing it from buildozer.spec if using default.cfg"
+    fi
     
-    echo "✅ buildozer.spec updated with explicit paths"
-    echo "   Added android.sdk_path, android.ndk_path, android.ant_path"
-    echo "   Added android.skip_update = True"
-    echo "   Added android.accept_sdk_license = True"
+    if grep -q 'android.ndk_path' buildozer.spec; then
+        echo "⚠️ Warning: android.ndk_path found in buildozer.spec"
+        echo "   This may cause DuplicateOptionError with default.cfg"
+        echo "   Consider removing it from buildozer.spec if using default.cfg"
+    fi
+    
+    if grep -q 'android.skip_update' buildozer.spec; then
+        echo "⚠️ Warning: android.skip_update found in buildozer.spec"
+        echo "   This may cause DuplicateOptionError with default.cfg"
+        echo "   Consider removing it from buildozer.spec if using default.cfg"
+    fi
+    
+    if grep -q 'android.accept_sdk_license' buildozer.spec; then
+        echo "⚠️ Warning: android.accept_sdk_license found in buildozer.spec"
+        echo "   This may cause DuplicateOptionError with default.cfg"
+        echo "   Consider removing it from buildozer.spec if using default.cfg"
+    fi
+    
+    echo "✅ buildozer.spec check completed"
+    echo "   Note: SDK/NDK paths are configured in ~/.buildozer/default.cfg"
+    echo "   No duplicate entries added to buildozer.spec"
 else
     echo "❌ buildozer.spec not found!"
     exit 1
@@ -240,7 +245,7 @@ chmod +x "$0"
 echo ""
 echo "🎯 Fix Summary:"
 echo "1. Created ~/.buildozer/default.cfg with explicit SDK/NDK paths"
-echo "2. Updated buildozer.spec with android.sdk_path and android.ndk_path"
+echo "2. Checked buildozer.spec for duplicate entries (removed to prevent DuplicateOptionError)"
 echo "3. Created setup_environment.sh script for GitHub Actions"
 echo "4. Created test_buildozer_config.sh to verify configuration"
 echo ""
