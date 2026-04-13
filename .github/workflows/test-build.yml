@@ -12,10 +12,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4.2.0
+      uses: actions/checkout@v4.3.0  # Latest version built for Node.js 24
       
     - name: Set up Python
-      uses: actions/setup-python@v5.2.0
+      uses: actions/setup-python@v5.3.0  # Latest version built for Node.js 24
       with:
         python-version: '3.12'
         
@@ -66,7 +66,7 @@ jobs:
         buildozer init  # This will create a default spec if missing, but we have one
         
     - name: Upload verification results
-      uses: actions/upload-artifact@v4.4.0
+      uses: actions/upload-artifact@v4.5.0  # Latest version built for Node.js 24
       with:
         name: verification-results
         path: |
