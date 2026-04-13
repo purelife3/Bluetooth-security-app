@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK (Node.js 24 Optimized)
 
 on:
   push:
@@ -7,21 +7,19 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # Allow manual triggering
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Force Node.js 24 to avoid deprecation warnings
-
+# Use Node.js 24 runner directly
 jobs:
   build-android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Use Ubuntu 24.04 which has Node.js 24 by default
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4.3.0  # Latest version built for Node.js 24
+      uses: actions/checkout@v4.3.0
       
     - name: Set up Python
-      uses: actions/setup-python@v5.3.0  # Latest version built for Node.js 24
+      uses: actions/setup-python@v5.3.0
       with:
-        python-version: '3.12'  # Updated to Python 3.12 for better compatibility
+        python-version: '3.12'
         
     - name: Install system dependencies
       run: |
@@ -104,7 +102,7 @@ jobs:
         fi
         
     - name: Upload APK artifact
-      uses: actions/upload-artifact@v4.5.0  # Latest version built for Node.js 24
+      uses: actions/upload-artifact@v4.5.0
       with:
         name: bluetooth-security-app
         path: bin/*.apk
@@ -112,7 +110,7 @@ jobs:
         
     - name: Upload build logs
       if: always()
-      uses: actions/upload-artifact@v4.5.0  # Latest version built for Node.js 24
+      uses: actions/upload-artifact@v4.5.0
       with:
         name: build-logs
         path: |
