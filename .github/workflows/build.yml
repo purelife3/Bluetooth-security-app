@@ -145,6 +145,81 @@ jobs:
         echo "SDK installation log summary:"
         tail -10 sdk_install.log
           
+    - name: Pre-download Android NDK to avoid Buildozer download errors
+      run: |
+        echo "📥 Pre-downloading Android NDK to avoid 'read of closed file' errors..."
+        
+        # Create NDK directory
+        mkdir -p ~/.buildozer/android/platform/android-ndk
+        
+        # NDK download URL (same as Buildozer uses)
+        NDK_URL="https://dl.google.com/android/repository/android-ndk-r25.1.8937393-linux.zip"
+        NDK_FILE="android-ndk-r25.1.8937393-linux.zip"
+        
+        # Download NDK with curl (robust download to avoid Python urllib issues)
+        echo "📋 Downloading Android NDK (this is ~1.5GB, may take several minutes)..."
+        
+        for attempt in {1..5}; do
+          echo "📋 Attempt $attempt/5..."
+          
+          # Clean up any previous failed downloads
+          rm -f "$NDK_FILE" "$NDK_FILE.part"
+          
+          # Download with curl - resume support, timeout, and progress bar
+          if curl -L --retry 3 --retry-delay 5 --connect-timeout 30 --max-time 600 \
+               --progress-bar \
+               -o "$NDK_FILE" \
+               "$NDK_URL"; then
+            echo "✅ NDK download completed successfully"
+            
+            # Verify file size (should be > 1GB)
+            file_size=$(stat -c%s "$NDK_FILE" 2>/dev/null || stat -f%z "$NDK_FILE")
+            if [ "$file_size" -gt 1000000000 ]; then
+              echo "✅ NDK file size check passed: $((file_size/1024/1024)) MB"
+              break
+            else
+              echo "⚠️ NDK file size suspiciously small: $((file_size/1024/1024)) MB"
+              if [ $attempt -eq 5 ]; then
+                echo "❌ All NDK download attempts failed - file too small"
+                exit 1
+              fi
+              echo "Retrying in 5 seconds..."
+              sleep 5
+            fi
+          else
+            echo "⚠️ NDK download failed on attempt $attempt"
+            if [ $attempt -eq 5 ]; then
+              echo "❌ All NDK download attempts failed"
+              exit 1
+            fi
+            echo "Retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        
+        # Verify download integrity
+        echo "🔍 Verifying NDK download integrity..."
+        if [ ! -f "$NDK_FILE" ]; then
+          echo "❌ NDK downloaded file not found"
+          exit 1
+        fi
+        
+        # Check if file is a valid zip
+        echo "📦 Checking NDK zip file integrity..."
+        if unzip -tq "$NDK_FILE" > /dev/null 2>&1; then
+          echo "✅ NDK zip file integrity check passed"
+        else
+          echo "❌ NDK zip file is corrupted"
+          exit 1
+        fi
+        
+        # Move NDK to Buildozer's expected location
+        echo "📦 Moving NDK to Buildozer cache location..."
+        mv "$NDK_FILE" ~/.buildozer/android/platform/android-ndk/
+        
+        echo "✅ Android NDK pre-download completed successfully!"
+        echo "📊 NDK cache location: ~/.buildozer/android/platform/android-ndk/$NDK_FILE"
+        
     - name: Configure Buildozer for GitHub Actions
       run: |
         # Update buildozer.spec for cloud building
