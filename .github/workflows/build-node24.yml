@@ -150,73 +150,82 @@ jobs:
         # Create NDK directory
         mkdir -p ~/.buildozer/android/platform/android-ndk
         
-        # NDK download URL (same as Buildozer uses)
-        NDK_URL="https://dl.google.com/android/repository/android-ndk-r25.1.8937393-linux.zip"
-        NDK_FILE="android-ndk-r25.1.8937393-linux.zip"
+        # Try multiple NDK download URLs - Google's URLs can be tricky
+        # First, let's check what Buildozer actually tries to download
+        echo "🔍 Checking available NDK download options..."
         
-        # Download NDK with curl (robust download to avoid Python urllib issues)
-        echo "📋 Downloading Android NDK (this is ~1.5GB, may take several minutes)..."
+        # Option 1: Official Google NDK download (may require authentication)
+        # Option 2: Use sdkmanager to download NDK (more reliable)
+        echo "📦 Using sdkmanager to download Android NDK..."
         
-        for attempt in {1..5}; do
-          echo "📋 Attempt $attempt/5..."
+        # First, make sure sdkmanager is available
+        if [ ! -f ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager ]; then
+          echo "❌ sdkmanager not found! SDK setup may have failed."
+          exit 1
+        fi
+        
+        # Download NDK using sdkmanager (this is what Buildozer should do internally)
+        echo "📋 Downloading Android NDK via sdkmanager (this is ~1.5GB, may take several minutes)..."
+        
+        # Run sdkmanager with progress tracking
+        ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager \
+          "ndk;25.1.8937393" 2>&1 | tee ndk_download.log
+        
+        # Check if NDK was downloaded successfully
+        echo "🔍 Checking if NDK was downloaded..."
+        if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
+          echo "✅ NDK downloaded successfully via sdkmanager!"
+          echo "📊 NDK location: ~/.buildozer/android/sdk/ndk/25.1.8937393"
           
-          # Clean up any previous failed downloads
-          rm -f "$NDK_FILE" "$NDK_FILE.part"
+          # Create a symlink to Buildozer's expected location
+          echo "🔗 Creating symlink for Buildozer..."
+          ln -sf ~/.buildozer/android/sdk/ndk/25.1.8937393 ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
           
-          # Download with curl - resume support, timeout, and progress bar
+          echo "✅ Android NDK setup completed via sdkmanager!"
+        else
+          echo "⚠️ NDK not found in SDK directory, checking alternative locations..."
+          
+          # Check if NDK was downloaded to a different location
+          find ~/.buildozer -name "*ndk*" -type d 2>/dev/null | head -10
+          
+          echo "❌ NDK download via sdkmanager may have failed"
+          echo "📋 sdkmanager output:"
+          tail -20 ndk_download.log
+          
+          # Fallback: Try direct download with correct URL
+          echo "🔄 Trying fallback direct download..."
+          NDK_URL="https://dl.google.com/android/repository/android-ndk-r25b-linux.zip"
+          NDK_FILE="android-ndk-r25b-linux.zip"
+          
+          echo "📋 Downloading NDK r25b (alternative version)..."
           if curl -L --retry 3 --retry-delay 5 --connect-timeout 30 --max-time 600 \
                --progress-bar \
                -o "$NDK_FILE" \
                "$NDK_URL"; then
-            echo "✅ NDK download completed successfully"
+            echo "✅ NDK download completed"
             
-            # Verify file size (should be > 1GB)
+            # Verify file size
             file_size=$(stat -c%s "$NDK_FILE" 2>/dev/null || stat -f%z "$NDK_FILE")
             if [ "$file_size" -gt 1000000000 ]; then
               echo "✅ NDK file size check passed: $((file_size/1024/1024)) MB"
-              break
+              
+              # Extract NDK
+              echo "📦 Extracting NDK..."
+              unzip -q "$NDK_FILE" -d ~/.buildozer/android/platform/android-ndk/
+              
+              # Create expected directory structure
+              mv ~/.buildozer/android/platform/android-ndk/android-ndk-r25b ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+              
+              echo "✅ NDK fallback download successful!"
             else
-              echo "⚠️ NDK file size suspiciously small: $((file_size/1024/1024)) MB"
-              if [ $attempt -eq 5 ]; then
-                echo "❌ All NDK download attempts failed - file too small"
-                exit 1
-              fi
-              echo "Retrying in 5 seconds..."
-              sleep 5
-            fi
-          else
-            echo "⚠️ NDK download failed on attempt $attempt"
-            if [ $attempt -eq 5 ]; then
-              echo "❌ All NDK download attempts failed"
+              echo "❌ NDK file too small: $((file_size/1024/1024)) MB"
               exit 1
             fi
-            echo "Retrying in 5 seconds..."
-            sleep 5
+          else
+            echo "❌ All NDK download attempts failed"
+            echo "⚠️ Continuing anyway - Buildozer may download NDK itself (and trigger the error)"
           fi
-        done
-        
-        # Verify download integrity
-        echo "🔍 Verifying NDK download integrity..."
-        if [ ! -f "$NDK_FILE" ]; then
-          echo "❌ NDK downloaded file not found"
-          exit 1
         fi
-        
-        # Check if file is a valid zip
-        echo "📦 Checking NDK zip file integrity..."
-        if unzip -tq "$NDK_FILE" > /dev/null 2>&1; then
-          echo "✅ NDK zip file integrity check passed"
-        else
-          echo "❌ NDK zip file is corrupted"
-          exit 1
-        fi
-        
-        # Move NDK to Buildozer's expected location
-        echo "📦 Moving NDK to Buildozer cache location..."
-        mv "$NDK_FILE" ~/.buildozer/android/platform/android-ndk/
-        
-        echo "✅ Android NDK pre-download completed successfully!"
-        echo "📊 NDK cache location: ~/.buildozer/android/platform/android-ndk/$NDK_FILE"
         
     - name: Configure Buildozer for GitHub Actions
       run: |
