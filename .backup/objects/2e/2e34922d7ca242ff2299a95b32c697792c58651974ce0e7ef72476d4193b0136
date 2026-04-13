@@ -1,0 +1,100 @@
+#!/bin/bash
+
+echo "🔍 Checking Git Repository Status"
+echo "================================="
+
+# Check if git is installed
+if ! command -v git &> /dev/null; then
+    echo "❌ Git is not installed. Please install git first."
+    exit 1
+fi
+
+# Check if we're in a git repository
+if [ ! -d ".git" ]; then
+    echo "❌ Not a git repository."
+    echo ""
+    echo "To initialize git repository:"
+    echo "1. Run: git init"
+    echo "2. Run: git add ."
+    echo "3. Run: git commit -m 'Initial commit'"
+    echo "4. Run: git remote add origin YOUR_GITHUB_REPO_URL"
+    echo "5. Run: git push -u origin main"
+    exit 1
+fi
+
+echo "✅ Git repository found."
+
+# Check git status
+echo ""
+echo "📊 Git Status:"
+echo "-------------"
+git status
+
+# Check remote
+echo ""
+echo "🌐 Remote Repository:"
+echo "-------------------"
+git remote -v
+
+# Check last commit
+echo ""
+echo "📝 Last Commit:"
+echo "--------------"
+git log --oneline -1
+
+# Check if workflow files are tracked
+echo ""
+echo "📁 Workflow Files Status:"
+echo "------------------------"
+if [ -d ".github/workflows" ]; then
+    echo "Workflow directory exists."
+    echo ""
+    echo "Files in .github/workflows/:"
+    ls -la .github/workflows/
+    
+    echo ""
+    echo "Git status of workflow files:"
+    git status .github/workflows/
+    
+    echo ""
+    echo "📋 Workflow file differences:"
+    echo "---------------------------"
+    if git diff --name-only HEAD .github/workflows/ 2>/dev/null; then
+        echo "No differences from HEAD"
+    else
+        echo "Differences found"
+    fi
+else
+    echo "❌ .github/workflows directory not found!"
+fi
+
+# Check if buildozer.spec is tracked
+echo ""
+echo "📄 buildozer.spec Status:"
+echo "------------------------"
+if [ -f "buildozer.spec" ]; then
+    echo "✅ buildozer.spec exists locally."
+    echo ""
+    echo "Git status of buildozer.spec:"
+    git status buildozer.spec
+else
+    echo "❌ buildozer.spec not found locally!"
+fi
+
+# Check for uncommitted changes
+echo ""
+echo "📝 Uncommitted Changes Summary:"
+echo "-----------------------------"
+git diff --stat
+
+# Check if we need to push
+echo ""
+echo "📤 Push Status:"
+echo "--------------"
+git log --oneline origin/main..HEAD 2>/dev/null || echo "No remote 'origin/main' or not connected"
+
+# Show what would be pushed
+echo ""
+echo "📋 What would be pushed:"
+echo "----------------------"
+git diff --name-only HEAD origin/main 2>/dev/null || echo "Cannot compare with remote"

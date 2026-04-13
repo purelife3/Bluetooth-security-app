@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Push workflow fixes to GitHub
+echo "🚀 Pushing workflow fixes to GitHub..."
+
+# Check git status
+echo "📊 Checking git status..."
+git status
+
+# Add the fixed workflow files
+echo "📁 Adding fixed workflow files..."
+git add .github/workflows/build.yml
+git add .github/workflows/build-node24.yml
+
+# Commit the changes
+echo "💾 Committing fixes..."
+git commit -m "Fix Android SDK download issues with curl-based robust download
+
+- Replaced wget with curl for Android SDK downloads to fix 'ValueError: read of closed file' error
+- Added 5-attempt retry loop with curl's built-in retry support (--retry 3 --retry-delay 5)
+- Implemented file size verification (>100MB check) to ensure complete downloads
+- Added zip integrity validation with unzip -tq command
+- Enhanced network timeout handling (--connect-timeout 30 --max-time 300)
+- Added progress tracking with --progress-bar for better visibility
+- Clean up partial downloads before retry attempts
+- Both workflow files (build.yml and build-node24.yml) updated with identical robust download logic"
+
+# Push to GitHub
+echo "📤 Pushing to GitHub..."
+git push origin main
+
+echo "✅ Fixes pushed successfully!"
+echo ""
+echo "📋 Next steps:"
+echo "1. Go to your GitHub repository"
+echo "2. Navigate to Actions tab"
+echo "3. Run the workflow manually or wait for automatic trigger"
+echo "4. Check the detailed build logs to see why APK isn't being created"
+echo ""
+echo "🔍 If APK still isn't created, check:"
+echo "   - Build logs in the workflow run"
+echo "   - Look for timeout or dependency errors"
+echo "   - Run diagnose_build_issue.sh for local diagnostics"

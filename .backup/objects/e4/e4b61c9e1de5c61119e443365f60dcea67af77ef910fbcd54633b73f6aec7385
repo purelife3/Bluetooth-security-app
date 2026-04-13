@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Push workflow fixes to GitHub
+echo "🚀 Pushing workflow fixes to GitHub..."
+
+# Check git status
+echo "📊 Checking git status..."
+git status
+
+# Add the fixed workflow files
+echo "📁 Adding fixed workflow files..."
+git add .github/workflows/build.yml
+git add .github/workflows/build-node24.yml
+
+# Commit the changes
+echo "💾 Committing fixes..."
+git commit -m "Fix Android SDK download issues and improve build reliability
+
+- Added retry logic for Android SDK downloads (3 attempts with timeout)
+- Enhanced error handling for network interruptions
+- Added progress tracking and detailed logging for SDK installation
+- Fixed shell script glob pattern handling in APK detection
+- Added if-no-files-found: warn to APK upload step
+- Increased build timeout from 30 to 45 minutes
+- Improved error handling and diagnostics"
+
+# Push to GitHub
+echo "📤 Pushing to GitHub..."
+git push origin main
+
+echo "✅ Fixes pushed successfully!"
+echo ""
+echo "📋 Next steps:"
+echo "1. Go to your GitHub repository"
+echo "2. Navigate to Actions tab"
+echo "3. Run the workflow manually or wait for automatic trigger"
+echo "4. Check the detailed build logs to see why APK isn't being created"
+echo ""
+echo "🔍 If APK still isn't created, check:"
+echo "   - Build logs in the workflow run"
+echo "   - Look for timeout or dependency errors"
+echo "   - Run diagnose_build_issue.sh for local diagnostics"

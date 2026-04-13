@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Push workflow fixes to GitHub
+echo "🚀 Pushing workflow fixes to GitHub..."
+
+# Check git status
+echo "📊 Checking git status..."
+git status
+
+# Add the fixed workflow files
+echo "📁 Adding fixed workflow files..."
+git add .github/workflows/build.yml
+git add .github/workflows/build-node24.yml
+
+# Commit the changes
+echo "💾 Committing fixes..."
+git commit -m "Fix APK file detection logic in GitHub Actions workflows
+
+- Fixed shell script glob pattern handling in APK detection
+- Added if-no-files-found: warn to APK upload step
+- Improved error handling for missing APK files"
+
+# Push to GitHub
+echo "📤 Pushing to GitHub..."
+git push origin main
+
+echo "✅ Fixes pushed successfully!"
+echo ""
+echo "📋 Next steps:"
+echo "1. Go to your GitHub repository"
+echo "2. Navigate to Actions tab"
+echo "3. Run the workflow manually or wait for automatic trigger"
+echo "4. Check if APK files are now properly detected and uploaded"

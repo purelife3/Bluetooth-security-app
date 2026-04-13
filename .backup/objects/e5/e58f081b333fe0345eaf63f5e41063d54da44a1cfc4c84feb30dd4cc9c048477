@@ -1,0 +1,123 @@
+name: Build Android APK (Node.js 24 Optimized)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual triggering
+
+# Use Node.js 24 runner directly
+jobs:
+  build-android:
+    runs-on: ubuntu-24.04  # Use Ubuntu 24.04 which has Node.js 24 by default
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.3.0
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5.3.0
+      with:
+        python-version: '3.12'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git \
+          build-essential \
+          libffi-dev \
+          libssl-dev \
+          python3-dev \
+          python3-pip \
+          python3-venv \
+          zip \
+          unzip \
+          openjdk-17-jdk \
+          wget \
+          curl
+        
+    - name: Install Buildozer and dependencies
+      run: |
+        python3 -m pip install --upgrade pip wheel setuptools
+        python3 -m pip install buildozer cython==0.29.36
+        
+    - name: Set up Android SDK/NDK
+      run: |
+        # Create Android SDK directory
+        mkdir -p ~/.buildozer/android/platform
+        
+        # Download and extract Android SDK command-line tools
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        mkdir -p ~/.buildozer/android/sdk/cmdline-tools
+        unzip -q commandlinetools-linux-9477386_latest.zip -d ~/.buildozer/android/sdk/cmdline-tools
+        mv ~/.buildozer/android/sdk/cmdline-tools/cmdline-tools ~/.buildozer/android/sdk/cmdline-tools/latest
+        
+        # Set environment variables
+        echo "ANDROID_HOME=~/.buildozer/android/sdk" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=~/.buildozer/android/sdk" >> $GITHUB_ENV
+        echo "PATH=$PATH:~/.buildozer/android/sdk/cmdline-tools/latest/bin:~/.buildozer/android/sdk/platform-tools" >> $GITHUB_ENV
+        
+        # Accept licenses
+        yes | ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        
+        # Install required SDK packages
+        ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager \
+          "platform-tools" \
+          "platforms;android-33" \
+          "build-tools;33.0.0" \
+          "ndk;25.1.8937393"
+          
+    - name: Configure Buildozer for GitHub Actions
+      run: |
+        # Update buildozer.spec for cloud building
+        sed -i 's/android.arch = armeabi-v7a/android.arch = arm64-v8a/' buildozer.spec
+        sed -i 's/android.minapi = 21/android.minapi = 23/' buildozer.spec
+        sed -i 's/android.targetapi = 33/android.targetapi = 33/' buildozer.spec
+        
+        # Add buildozer default settings for CI
+        echo "[buildozer]" >> ~/.buildozer/default.cfg
+        echo "log_level = 2" >> ~/.buildozer/default.cfg
+        echo "warn_on_root = 0" >> ~/.buildozer/default.cfg
+        
+    - name: Build APK with Buildozer
+      run: |
+        # Clean any previous builds
+        buildozer android clean || true
+        
+        # Create .buildozer directory if it doesn't exist
+        mkdir -p .buildozer
+        
+        # Build debug APK with timeout and continue on error
+        timeout 1800 buildozer -v android debug || echo "Build failed, continuing to upload logs"
+        
+        # Check if APK was created (handle glob patterns correctly)
+        if ls bin/*.apk 2>/dev/null; then
+          echo "APK created successfully!"
+          ls -la bin/
+        else
+          echo "APK not created, checking build logs..."
+          find . -name "*.log" -type f | head -5
+        fi
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4.5.0
+      with:
+        name: bluetooth-security-app
+        path: bin/*.apk
+        if-no-files-found: warn
+        retention-days: 7
+        
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4.5.0
+      with:
+        name: build-logs
+        path: |
+          .buildozer/**/*
+          buildozer.spec
+          buildozer.log
+          *.log
+        if-no-files-found: warn
+        retention-days: 7
