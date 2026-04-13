@@ -98,6 +98,24 @@ mkdir -p "$HOME/.buildozer/android/sdk"
 mkdir -p "$HOME/.buildozer/android/sdk/ndk/25.1.8937393"
 mkdir -p "$HOME/.buildozer/android/platform/apache-ant-1.9.4"
 
+# CRITICAL FIX: Prevent Buildozer from creating platform directories
+# Create symlinks from platform directories to sdk directories
+echo "🔗 Creating symlinks to prevent Buildozer platform directory creation..."
+mkdir -p "$HOME/.buildozer/android/platform"
+if [ ! -L "$HOME/.buildozer/android/platform/android-sdk" ]; then
+    ln -sf "$HOME/.buildozer/android/sdk" "$HOME/.buildozer/android/platform/android-sdk"
+    echo "✅ Created symlink: platform/android-sdk -> sdk"
+fi
+
+if [ ! -L "$HOME/.buildozer/android/platform/android-ndk" ]; then
+    ln -sf "$HOME/.buildozer/android/sdk/ndk/25.1.8937393" "$HOME/.buildozer/android/platform/android-ndk"
+    echo "✅ Created symlink: platform/android-ndk -> sdk/ndk/25.1.8937393"
+fi
+
+# Verify symlinks
+echo "🔍 Verifying symlinks:"
+ls -la "$HOME/.buildozer/android/platform/" | grep -E "(android-sdk|android-ndk)"
+
 # Verify environment
 echo "✅ Environment variables set:"
 echo "   ANDROID_HOME: $ANDROID_HOME"
