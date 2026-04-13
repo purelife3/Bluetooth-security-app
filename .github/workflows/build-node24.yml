@@ -92,8 +92,8 @@ jobs:
         # Build debug APK with timeout and continue on error
         timeout 1800 buildozer -v android debug || echo "Build failed, continuing to upload logs"
         
-        # Check if APK was created
-        if [ -f "bin/*.apk" ]; then
+        # Check if APK was created (handle glob patterns correctly)
+        if ls bin/*.apk 2>/dev/null; then
           echo "APK created successfully!"
           ls -la bin/
         else
@@ -106,6 +106,7 @@ jobs:
       with:
         name: bluetooth-security-app
         path: bin/*.apk
+        if-no-files-found: warn
         retention-days: 7
         
     - name: Upload build logs
