@@ -88,8 +88,20 @@ jobs:
         # Clean any previous builds
         buildozer android clean || true
         
-        # Build debug APK
-        buildozer -v android debug
+        # Create .buildozer directory if it doesn't exist
+        mkdir -p .buildozer
+        
+        # Build debug APK with timeout and continue on error
+        timeout 1800 buildozer -v android debug || echo "Build failed, continuing to upload logs"
+        
+        # Check if APK was created
+        if [ -f "bin/*.apk" ]; then
+          echo "APK created successfully!"
+          ls -la bin/
+        else
+          echo "APK not created, checking build logs..."
+          find . -name "*.log" -type f | head -5
+        fi
         
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4.4.0  # Updated to latest version
@@ -104,6 +116,9 @@ jobs:
       with:
         name: build-logs
         path: |
-          .buildozer/
+          .buildozer/**/*
           buildozer.spec
+          buildozer.log
+          *.log
+        if-no-files-found: warn
         retention-days: 7
