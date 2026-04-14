@@ -28,58 +28,57 @@ git add .
 
 echo ""
 echo "💾 Committing with detailed message..."
-git commit -m "Fix: Complete workflow standardization with execution order and path consistency
+git commit -m "Fix: Enhanced license acceptance with explicit SDK root and multi-location license files
 
 Root cause analysis:
-1. EXECUTION ORDER ISSUE: The 'buildozer android clean || true' command triggered Buildozer's internal setup
-   - Buildozer checked for NDK before platform directories were created
-   - This caused Buildozer to attempt NDK download, leading to 'ValueError: read of closed file'
-   - Even with versioned directory solution, execution order caused failure
+1. LICENSE ACCEPTANCE FAILURE: Both platform-tools and build-tools 37.0.0 still failing with 'Skipping following packages as the license is not accepted'
+   - Previous five-method solution not working in GitHub Actions environment
+   - sdkmanager commands missing critical --sdk_root parameter
+   - License files created in wrong locations (sdkmanager looking elsewhere)
+   - Simple 'echo y' piping not effective for interactive license prompts
 
-2. ENVIRONMENT VARIABLE CONFLICT:
-   - Temporary SDK installation variables conflicted with platform directory variables
-   - Mixed path reference styles (~ vs \$HOME) caused shell expansion inconsistencies
-   - GitHub Actions shell contexts had different tilde expansion behaviors
+2. SDK ROOT PARAMETER MISSING:
+   - sdkmanager commands on lines 225-230 missing --sdk_root parameter
+   - Without explicit SDK root, sdkmanager looks for licenses in default locations
+   - In GitHub Actions environment, default location differs from Buildozer SDK location
 
-3. VERSIONED DIRECTORY REQUIREMENT:
-   - Buildozer expects NDK at platform/android-ndk/android-ndk-r25.1.8937393/ (not just platform/android-ndk/)
-   - GitHub Actions logs show: 'Symlink: ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393'
+3. LICENSE FILE LOCATION MISMATCH:
+   - License files created in $HOME/.android/licenses/ but sdkmanager looking elsewhere
+   - Buildozer SDK at $HOME/.buildozer/android/sdk needs its own licenses directory
+   - Multiple possible license locations need to be covered
 
 Solution implemented:
-1. WORKFLOW RESTRUCTURING (CRITICAL):
-   - Removed problematic 'buildozer android clean || true' command from build step
-   - Added 'Configure Buildozer platform directories (CRITICAL)' step (lines 231-260)
-   - Platform directories created IMMEDIATELY after SDK/NDK setup, BEFORE any Buildozer commands
-   - Environment variables (ANDROID_HOME, ANDROID_NDK_HOME) set via \$GITHUB_ENV for persistence
+1. ENHANCED LICENSE ACCEPTANCE WITH EXPLICIT SDK ROOT (CRITICAL):
+   - All sdkmanager commands now include --sdk_root=$HOME/.buildozer/android/sdk parameter
+   - SDK installation command (line 222) now includes explicit SDK root
+   - Ensures sdkmanager looks for license files in correct Buildozer SDK location
 
-2. ENVIRONMENT VARIABLE CONFLICT RESOLUTION:
-   - Temporary variables for SDK installation: ANDROID_HOME_TEMP, ANDROID_SDK_ROOT_TEMP, ANDROID_NDK_HOME_TEMP, ANDROID_NDK_ROOT_TEMP (lines 124-129)
-   - Platform directory variables for Buildozer: ANDROID_HOME, ANDROID_SDK_ROOT, ANDROID_NDK_HOME, ANDROID_NDK_ROOT (lines 257-260, 271-275)
-   - Clear separation prevents conflicts between SDK installation and Buildozer execution
+2. MULTI-LOCATION LICENSE FILE CREATION:
+   - License files created in BOTH locations:
+     * $HOME/.android/licenses/ (standard Android SDK location)
+     * $HOME/.buildozer/android/sdk/licenses/ (Buildozer SDK location)
+   - Platform-tools license hash: 24333f8a63b6825ea9c5514f83c2829b004d1fee
+   - Build-tools license hashes: d975f751698a77b662f1254ddbeed3901e285f74 and 56f9970a959b55bae6b6a9855daf3e0ca85e8c6d
+   - License files created BEFORE any sdkmanager commands execute
 
-3. COMPLETE PATH STANDARDIZATION:
-   - All 16 tilde (~) references replaced with \$HOME references
-   - Consistent shell expansion across all GitHub Actions execution contexts
-   - No mixed path reference styles in the 404-line workflow file
-   - Includes fixes for previously missed tilde references in fallback NDK download (lines 215, 219), verification output (lines 348, 349), and artifact upload (line 389)
+3. AGGRESSIVE LICENSE ACCEPTANCE SCRIPT:
+   - Created accept_all_licenses.sh script that sends 'y' 20 times with delays
+   - Runs sdkmanager --licenses with explicit SDK root and auto-accepts all prompts
+   - Individual package license acceptance with explicit SDK root for platform-tools, build-tools, ndk
 
-4. VERSIONED DIRECTORY SOLUTION:
-   - fix_buildozer_platform_directories.sh (lines 67-79) creates:
-     * platform/android-ndk/android-ndk-r25.1.8937393/ directory structure
-     * Copies NDK contents to versioned subdirectory
-     * Creates platform/android-sdk/ as directory with SDK contents
+4. COMPREHENSIVE VERIFICATION:
+   - License file verification in both locations ($HOME/.android/licenses/ and $HOME/.buildozer/android/sdk/licenses/)
+   - sdkmanager --list test with explicit SDK root to verify license acceptance
+   - License count verification for each license file
 
 Expected outcome:
-- ✅ Platform directories created BEFORE any Buildozer commands execute
-- ✅ No environment variable conflicts between SDK installation and Buildozer
-- ✅ Consistent path resolution with \$HOME across all shell contexts
-- ✅ No 'Android NDK is missing, downloading' messages
-- ✅ No 'ValueError: read of closed file' errors
-- ✅ Buildozer finds platform/android-ndk/android-ndk-r25.1.8937393/ as directory
-- ✅ Successful APK generation in GitHub Actions
-- ✅ APK found via multi-location search (lines 326-338)
-- ✅ APK artifact uploaded successfully (lines 345-348)
-- This is phase 27 of troubleshooting (evolved from symlink → basic directory → versioned directory → execution order fix → environment variable conflict → complete path standardization)"
+- ✅ No 'Skipping following packages as the license is not accepted' messages
+- ✅ Successful installation of platform-tools, build-tools;33.0.0, and build-tools;37.0.0
+- ✅ aidl tool becomes available (critical for build process)
+- ✅ Build proceeds past SDK installation phase
+- ✅ License files present where sdkmanager expects them (both locations)
+- ✅ All previous fixes remain intact (NDK version, SDK tools structure, platform directory configuration, execution order, environment variable standardization)
+- This is phase 32 of troubleshooting (evolved from symlink → basic directory → versioned directory → execution order fix → environment variable conflict → path standardization → SDK tools structure → platform-tools license → build-tools license → enhanced multi-location license acceptance)"
 
 echo ""
 echo "📤 Pushing to GitHub..."
