@@ -124,9 +124,9 @@ jobs:
         echo "🔧 Setting temporary environment variables for SDK installation..."
         echo "ANDROID_HOME_TEMP=$HOME/.buildozer/android/sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT_TEMP=$HOME/.buildozer/android/sdk" >> $GITHUB_ENV
-        echo "ANDROID_NDK_HOME_TEMP=$HOME/.buildozer/android/sdk/ndk/25.1.8937393" >> $GITHUB_ENV
-        echo "ANDROID_NDK_ROOT_TEMP=$HOME/.buildozer/android/sdk/ndk/25.1.8937393" >> $GITHUB_ENV
-        echo "PATH_TEMP=$PATH:$HOME/.buildozer/android/sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/sdk/platform-tools:$HOME/.buildozer/android/sdk/ndk/25.1.8937393" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME_TEMP=$HOME/.buildozer/android/sdk/ndk/25b" >> $GITHUB_ENV
+        echo "ANDROID_NDK_ROOT_TEMP=$HOME/.buildozer/android/sdk/ndk/25b" >> $GITHUB_ENV
+        echo "PATH_TEMP=$PATH:$HOME/.buildozer/android/sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/sdk/platform-tools:$HOME/.buildozer/android/sdk/ndk/25b" >> $GITHUB_ENV
         
         # Accept licenses with better error handling (using temporary SDK location)
         echo "📝 Accepting Android licenses..."
@@ -142,7 +142,7 @@ jobs:
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.0" \
-          "ndk;25.1.8937393" 2>&1 | tee sdk_install.log
+          "ndk;25b" 2>&1 | tee sdk_install.log
         
         echo "✅ Android SDK setup completed"
         echo "SDK installation log summary:"
@@ -153,7 +153,7 @@ jobs:
         echo "📥 Pre-downloading Android NDK to avoid 'read of closed file' errors..."
         
         # Create NDK directory (use sdk/ndk structure, not platform)
-        mkdir -p $HOME/.buildozer/android/sdk/ndk/25.1.8937393
+        mkdir -p $HOME/.buildozer/android/sdk/ndk/25b
         
         # Try multiple NDK download URLs - Google's URLs can be tricky
         # First, let's check what Buildozer actually tries to download
@@ -174,13 +174,13 @@ jobs:
         
         # Run sdkmanager with progress tracking (using temporary SDK location)
         $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager \
-          "ndk;25.1.8937393" 2>&1 | tee ndk_download.log
+          "ndk;25b" 2>&1 | tee ndk_download.log
         
         # Check if NDK was downloaded successfully
         echo "🔍 Checking if NDK was downloaded..."
-        if [ -d $HOME/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
+        if [ -d $HOME/.buildozer/android/sdk/ndk/25b ]; then
           echo "✅ NDK downloaded successfully via sdkmanager!"
-          echo "📊 NDK location: $HOME/.buildozer/android/sdk/ndk/25.1.8937393"
+          echo "📊 NDK location: $HOME/.buildozer/android/sdk/ndk/25b"
           
           echo "✅ Android NDK setup completed via sdkmanager!"
         else
@@ -212,11 +212,11 @@ jobs:
               
               # Extract NDK to sdk directory structure
               echo "📦 Extracting NDK..."
-              mkdir -p $HOME/.buildozer/android/sdk/ndk/25.1.8937393
+              mkdir -p $HOME/.buildozer/android/sdk/ndk/25b
               unzip -q "$NDK_FILE" -d /tmp/
               
               # Move NDK to correct location
-              mv /tmp/android-ndk-r25b/* $HOME/.buildozer/android/sdk/ndk/25.1.8937393/
+              mv /tmp/android-ndk-r25b/* $HOME/.buildozer/android/sdk/ndk/25b/
               
               echo "✅ NDK fallback download successful!"
             else
@@ -249,15 +249,15 @@ jobs:
         echo "Platform/android-ndk directory:"
         ls -la $HOME/.buildozer/android/platform/android-ndk/
         
-        echo "Platform/android-ndk/android-ndk-r25.1.8937393 directory:"
-        ls -la $HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393/ | head -5
+        echo "Platform/android-ndk/android-ndk-r25b directory:"
+        ls -la $HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b/ | head -5
         
         # Set environment variables to point to our pre-configured directories
         echo "🔧 Setting environment variables for Buildozer..."
         echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
-        echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393" >> $GITHUB_ENV
-        echo "ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
+        echo "ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
         
     - name: Set up Buildozer environment
       run: |
@@ -270,9 +270,9 @@ jobs:
         echo "🔧 Ensuring Buildozer environment variables are set..."
         echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
-        echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393" >> $GITHUB_ENV
-        echo "ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393" >> $GITHUB_ENV
-        echo "PATH=$PATH:$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/platform/android-sdk/platform-tools:$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
+        echo "ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
+        echo "PATH=$PATH:$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/platform/android-sdk/platform-tools:$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
         
         # Verify environment variables are set
         echo "📋 Environment verification:"
@@ -330,12 +330,12 @@ jobs:
           ls -la "$ANDROID_NDK_HOME/" | head -10
         else
           echo "❌ ANDROID_NDK_HOME (platform) not found: $ANDROID_NDK_HOME"
-          echo "📁 Expected path: $HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+          echo "📁 Expected path: $HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b"
           echo "📁 Checking original NDK location..."
-          if [ -d "$HOME/.buildozer/android/sdk/ndk/25.1.8937393" ]; then
+          if [ -d "$HOME/.buildozer/android/sdk/ndk/25b" ]; then
             echo "✅ Original NDK found, copying to platform..."
             mkdir -p "$ANDROID_NDK_HOME"
-            cp -r "$HOME/.buildozer/android/sdk/ndk/25.1.8937393/*" "$ANDROID_NDK_HOME/" 2>/dev/null || true
+            cp -r "$HOME/.buildozer/android/sdk/ndk/25b/*" "$ANDROID_NDK_HOME/" 2>/dev/null || true
           fi
         fi
         
@@ -346,7 +346,7 @@ jobs:
         echo "Using NDK (platform): $ANDROID_NDK_HOME"
         echo "📋 Platform directory verification:"
         echo "   Platform SDK: $HOME/.buildozer/android/platform/android-sdk"
-        echo "   Platform NDK: $HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+        echo "   Platform NDK: $HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b"
         echo "   Environment: ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
         
         # Run build with detailed logging and continue on error

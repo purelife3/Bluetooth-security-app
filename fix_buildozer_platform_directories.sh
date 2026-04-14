@@ -49,8 +49,8 @@ fix_platform_directories() {
     fi
     
     # Check if NDK is already in sdk/ndk/ directory
-    if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
-        echo "✅ NDK found in sdk/ndk/25.1.8937393 directory"
+    if [ -d ~/.buildozer/android/sdk/ndk/25b ]; then
+        echo "✅ NDK found in sdk/ndk/25b directory"
         
         # Remove any existing symlinks
         if [ -L ~/.buildozer/android/platform/android-ndk ]; then
@@ -64,19 +64,19 @@ fix_platform_directories() {
             rm -rf ~/.buildozer/android/platform/android-ndk
         fi
         
-        # Create platform/android-ndk/android-ndk-r25.1.8937393 directory structure
-        echo "📁 Creating platform/android-ndk/android-ndk-r25.1.8937393 directory..."
-        mkdir -p ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+        # Create platform/android-ndk/android-ndk-r25b directory structure
+        echo "📁 Creating platform/android-ndk/android-ndk-r25b directory..."
+        mkdir -p ~/.buildozer/android/platform/android-ndk/android-ndk-r25b
         
         # Copy NDK contents to the versioned platform directory
-        echo "📋 Copying NDK contents to platform/android-ndk/android-ndk-r25.1.8937393..."
-        cp -r ~/.buildozer/android/sdk/ndk/25.1.8937393/* ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393/ 2>/dev/null || true
+        echo "📋 Copying NDK contents to platform/android-ndk/android-ndk-r25b..."
+        cp -r ~/.buildozer/android/sdk/ndk/25b/* ~/.buildozer/android/platform/android-ndk/android-ndk-r25b/ 2>/dev/null || true
         
-        echo "✅ platform/android-ndk/android-ndk-r25.1.8937393 created with NDK contents"
+        echo "✅ platform/android-ndk/android-ndk-r25b created with NDK contents"
     else
-        echo "⚠️ NDK not found in sdk/ndk/25.1.8937393 directory"
-        echo "   Creating empty platform/android-ndk/android-ndk-r25.1.8937393 directory"
-        mkdir -p ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+        echo "⚠️ NDK not found in sdk/ndk/25b directory"
+        echo "   Creating empty platform/android-ndk/android-ndk-r25b directory"
+        mkdir -p ~/.buildozer/android/platform/android-ndk/android-ndk-r25b
     fi
     
     # Verify the directories
@@ -149,10 +149,10 @@ update_workflow_file() {
         fi
         
         # Create platform/android-ndk as actual directory with NDK contents
-        if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
+        if [ -d ~/.buildozer/android/sdk/ndk/25b ]; then
             echo "📋 Copying NDK to platform/android-ndk..."
             mkdir -p ~/.buildozer/android/platform/android-ndk
-            cp -r ~/.buildozer/android/sdk/ndk/25.1.8937393/* ~/.buildozer/android/platform/android-ndk/ 2>/dev/null || true
+            cp -r ~/.buildozer/android/sdk/ndk/25b/* ~/.buildozer/android/platform/android-ndk/ 2>/dev/null || true
             echo "✅ platform/android-ndk created with NDK contents"
         else
             echo "⚠️ NDK not found, creating empty platform/android-ndk"
@@ -229,8 +229,8 @@ else
     echo "⚠️ Original SDK directory not found"
 fi
 
-if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
-    echo "✅ Original NDK directory exists: ~/.buildozer/android/sdk/ndk/25.1.8937393"
+if [ -d ~/.buildozer/android/sdk/ndk/25b ]; then
+    echo "✅ Original NDK directory exists: ~/.buildozer/android/sdk/ndk/25b"
 else
     echo "⚠️ Original NDK directory not found"
 fi

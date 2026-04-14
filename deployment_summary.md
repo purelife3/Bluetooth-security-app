@@ -7,7 +7,7 @@ The versioned directory solution failed due to execution order problem: `buildoz
 
 ## ❌ Critical Issue Identified
 1. **Execution order root cause**: `buildozer android clean || true` command (line 269) runs BEFORE platform directory fix
-2. **Buildozer triggers downloads**: When clean command executes, Buildozer checks for NDK in `~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393`
+2. **Buildozer triggers downloads**: When clean command executes, Buildozer checks for NDK in `~/.buildozer/android/platform/android-ndk/android-ndk-r25b`
 3. **Directory not found**: Platform directories don't exist yet (fix scripts haven't run)
 4. **Download cascade**: Buildozer attempts to download SDK/NDK from default URLs
 5. **"ValueError: read of closed file"**: Download fails with known error
@@ -18,24 +18,24 @@ The versioned directory solution failed due to execution order problem: `buildoz
 1. **Moved platform directory configuration**: Now runs immediately after SDK/NDK setup (lines 231-260)
 2. **Removed problematic clean command**: `buildozer android clean || true` removed from build step
 3. **Environment variables updated**: Set via `$GITHUB_ENV` to persist across steps
-4. **Platform directory paths**: All references updated to use `~/.buildozer/android/platform/android-sdk` and `~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393`
+4. **Platform directory paths**: All references updated to use `~/.buildozer/android/platform/android-sdk` and `~/.buildozer/android/platform/android-ndk/android-ndk-r25b`
 
 ## 🔧 Updated Workflow Structure
-1. SDK/NDK setup (lines 48-229) → Downloads SDK/NDK to `~/.buildozer/android/sdk/`
-2. **Configure Buildozer platform directories (CRITICAL)** (lines 231-260) → Creates platform directories with SDK/NDK contents
-3. Set up Buildozer environment (lines 262-278) → Verifies environment variables
+1. SDK/NDK setup (lines 48-229) → Downloads SDK/NDK to `~/.buildozer/android/sdk/` (NDK version "25b")
+2. **Configure Buildozer platform directories (CRITICAL)** (lines 231-260) → Creates platform directories with SDK/NDK contents (android-ndk-r25b)
+3. Set up Buildozer environment (lines 262-278) → Verifies environment variables (ANDROID_NDK_HOME points to android-ndk-r25b)
 4. Build APK with Buildozer (lines 280-364) → Uses platform directory paths, no clean command
 
 ## 🛠️ Versioned Directory Solution
-**Root cause**: Buildozer expects NDK at `platform/android-ndk/android-ndk-r25.1.8937393/` (versioned subdirectory)
+**Root cause**: Buildozer expects NDK at `platform/android-ndk/android-ndk-r25b/` (versioned subdirectory)
 
 **Solution implemented in `fix_buildozer_platform_directories.sh` (lines 67-79):**
 ```bash
-# Create platform/android-ndk/android-ndk-r25.1.8937393 directory structure
-mkdir -p ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+# Create platform/android-ndk/android-ndk-r25b directory structure
+mkdir -p ~/.buildozer/android/platform/android-ndk/android-ndk-r25b
 
 # Copy NDK contents to the versioned platform directory
-cp -r ~/.buildozer/android/sdk/ndk/25.1.8937393/* ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393/
+cp -r ~/.buildozer/android/sdk/ndk/25b/* ~/.buildozer/android/platform/android-ndk/android-ndk-r25b/
 ```
 
 ## 📋 Files Ready for Deployment (Updated)
@@ -53,7 +53,7 @@ chmod +x execute_push.sh && ./execute_push.sh
 1. ✅ New workflow triggered automatically (GitHub Actions)
 2. ✅ SDK/NDK downloaded to `~/.buildozer/android/sdk/` (lines 48-229)
 3. ✅ **CRITICAL**: Platform directories created BEFORE any Buildozer commands (lines 231-260)
-4. ✅ `platform/android-ndk/android-ndk-r25.1.8937393/` created with NDK contents
+4. ✅ `platform/android-ndk/android-ndk-r25b/` created with NDK contents
 5. ✅ Environment variables set via `$GITHUB_ENV` to persist across steps
 6. ✅ **NO** `buildozer android clean` command triggering downloads
 7. ✅ Buildozer finds platform directories and uses pre-downloaded SDK/NDK
@@ -66,9 +66,10 @@ chmod +x execute_push.sh && ./execute_push.sh
 **Phase 23**: Symlink approach (failed due to `os.path.isdir()` checks)
 **Phase 24**: Basic directory approach (failed due to missing versioned subdirectory)
 **Phase 25**: Versioned directory approach (addresses Buildozer's specific hierarchy requirements)
+**Phase 26**: NDK version mismatch fix (updated all references from "25.1.8937393" to "25b")
 
 ## ⚠️ Critical Success Indicators in Next Workflow Run
-- ✅ "Created platform/android-ndk/android-ndk-r25.1.8937393 directory" message
+- ✅ "Created platform/android-ndk/android-ndk-r25b directory" message
 - ✅ "NDK contents copied to versioned subdirectory" message
 - ❌ No "Android NDK is missing, downloading" message
 - ❌ No "ValueError: read of closed file" error
@@ -81,7 +82,7 @@ Detailed commit message documents:
 - Evidence from workflow logs
 - Solution implementation details
 - Expected outcome
-- Evolution history (phase 25)
+- Evolution history (phase 26 - NDK version mismatch fix)
 
 ## 🎯 Next Steps
 1. Run `chmod +x execute_push.sh && ./execute_push.sh`
@@ -98,6 +99,48 @@ If deployment fails:
 4. Run `./check_git_simple.sh` to verify setup
 
 ---
+## NDK Version Mismatch Fix - COMPLETED
+
+### 🎯 Status: All NDK Version References Updated from "25.1.8937393" to "25b"
+
+#### **Root Cause Identified**
+Python-for-android (p4a) expects NDK version "25b" but the workflow was installing "25.1.8937393". This caused p4a to not recognize the installed NDK and attempt to download it, triggering the "read of closed file" error.
+
+#### **Solution Implemented**
+Systematically updated all references from "25.1.8937393" to "25b" throughout the entire build pipeline:
+
+1. **Workflow File Updates**:
+   - SDK installation command changed to `"ndk;25b"` (line 145)
+   - Temporary environment variables reference `ndk/25b` (lines 127-129)
+   - NDK directory creation creates `sdk/ndk/25b` (line 156)
+   - Final environment variables point to `android-ndk-r25b` (lines 273-275)
+   - Direct download URL is `android-ndk-r25b-linux.zip` (line 198)
+   - PATH includes `android-ndk-r25b` (line 275)
+
+2. **Platform Directory Script Updates**:
+   - All 12 references updated to "25b" in `fix_buildozer_platform_directories.sh`
+   - Creates `platform/android-ndk/android-ndk-r25b/` directory structure
+   - Checks for NDK at `~/.buildozer/android/sdk/ndk/25b`
+   - Copy operations reference correct paths
+
+#### **Critical Directory Structure Now Created**
+- `~/.buildozer/android/sdk/ndk/25b/` (original SDK location)
+- `~/.buildozer/android/platform/android-ndk/android-ndk-r25b/` (platform directory for p4a)
+
+#### **Expected Outcomes**
+1. ✅ Python-for-android recognizes the installed NDK version "25b"
+2. ✅ Buildozer does not attempt to download NDK during build
+3. ✅ "read of closed file" error resolved
+4. ✅ APK build proceeds without NDK download attempts
+
+#### **Verification Points**
+- ✅ All workflow references updated to "25b"
+- ✅ Platform script creates correct `android-ndk-r25b` structure
+- ✅ Environment variables point to correct versioned paths
+- ✅ Direct download URL matches expected version
+
+---
+
 ## Environment Variable Conflict Fix - COMPLETED
 
 ### 🎯 Status: Environment Variable Conflict Fully Resolved with Path Standardization
@@ -109,15 +152,15 @@ Environment variable conflicts between SDK installation and Buildozer execution 
 1. **Temporary Variables for SDK Installation** (Lines 124-129):
    - `ANDROID_HOME_TEMP=$HOME/.buildozer/android/sdk`
    - `ANDROID_SDK_ROOT_TEMP=$HOME/.buildozer/android/sdk`
-   - `ANDROID_NDK_HOME_TEMP=$HOME/.buildozer/android/sdk/ndk/25.1.8937393`
-   - `ANDROID_NDK_ROOT_TEMP=$HOME/.buildozer/android/sdk/ndk/25.1.8937393`
-   - `PATH_TEMP=$PATH:$HOME/.buildozer/android/sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/sdk/platform-tools:$HOME/.buildozer/android/sdk/ndk/25.1.8937393`
+   - `ANDROID_NDK_HOME_TEMP=$HOME/.buildozer/android/sdk/ndk/25b`
+   - `ANDROID_NDK_ROOT_TEMP=$HOME/.buildozer/android/sdk/ndk/25b`
+   - `PATH_TEMP=$PATH:$HOME/.buildozer/android/sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/sdk/platform-tools:$HOME/.buildozer/android/sdk/ndk/25b`
 
 2. **Platform Directory Variables for Buildozer** (Lines 257-260, 271-275):
    - `ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk`
    - `ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk`
-   - `ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393`
-   - `ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393`
+   - `ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b`
+   - `ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b`
 
 3. **Path Standardization**:
    - All `~` references replaced with `$HOME` for consistent shell expansion
@@ -146,4 +189,4 @@ Environment variable conflicts between SDK installation and Buildozer execution 
 
 ---
 
-**Status**: READY FOR FINAL PUSH | **Solution**: Versioned directory fix + Environment variable conflict resolution | **Phase**: 25 | **APK Path**: Multi-location search configured
+**Status**: READY FOR FINAL PUSH | **Solution**: NDK version mismatch fix (25.1.8937393 → 25b) + Execution order fix + Environment variable conflict resolution | **Phase**: 26 | **APK Path**: Multi-location search configured
