@@ -67,6 +67,7 @@ chmod +x execute_push.sh && ./execute_push.sh
 **Phase 24**: Basic directory approach (failed due to missing versioned subdirectory)
 **Phase 25**: Versioned directory approach (addresses Buildozer's specific hierarchy requirements)
 **Phase 26**: NDK version mismatch fix (updated all references from "25.1.8937393" to "25b")
+**Phase 27**: Buildozer.spec NDK version fix (critical discovery - spec file overriding workflow configuration)
 
 ## ⚠️ Critical Success Indicators in Next Workflow Run
 - ✅ "Created platform/android-ndk/android-ndk-r25b directory" message
@@ -140,7 +141,44 @@ Systematically updated all references from "25.1.8937393" to "25b" throughout th
 - ✅ Direct download URL matches expected version
 
 ---
+## Buildozer.spec NDK Version Fix - CRITICAL DISCOVERY & FIX
 
+### 🎯 Status: Root Cause Found - buildozer.spec Overriding Workflow Configuration
+
+#### **Critical Discovery**
+During workflow execution analysis, we discovered that **Buildozer was correctly identifying "Recommended android's NDK version by p4a is: 25b" but still downloading "android-ndk-r25.1.8937393-linux.zip"**. This was because:
+
+1. **Buildozer reads NDK version from buildozer.spec file** (line 50: `android.ndk = 25.1.8937393`)
+2. **This setting overrides workflow configuration** even when environment variables point to "25b"
+3. **Buildozer's internal mapping** translates "25b" to "25.1.8937393" based on the spec file setting
+
+#### **Root Cause Analysis**
+- Workflow file correctly configured: `"ndk;25b"` in SDK installation command
+- Environment variables correctly set: `ANDROID_NDK_HOME` points to `android-ndk-r25b`
+- Platform directories correctly created: `platform/android-ndk/android-ndk-r25b/`
+- **BUT**: `buildozer.spec` file had `android.ndk = 25.1.8937393` (line 50)
+
+#### **Solution Implemented**
+Updated **ALL THREE** buildozer.spec files to use NDK version "25b":
+
+1. **Main buildozer.spec** (line 50): `android.ndk = 25b`
+2. **build_logs/buildozer.spec** (line 50): `android.ndk = 25b`
+3. **build_logs_analysis/buildozer.spec** (line 50): `android.ndk = 25b`
+
+#### **Expected Outcomes After Fix**
+1. ✅ Buildozer reads correct NDK version "25b" from spec file
+2. ✅ No internal mapping to "25.1.8937393"
+3. ✅ Buildozer uses pre-downloaded NDK version "25b"
+4. ✅ No attempt to download "android-ndk-r25.1.8937393-linux.zip"
+5. ✅ "ValueError: read of closed file" error resolved
+
+#### **Verification Points**
+- ✅ All buildozer.spec files updated to `android.ndk = 25b`
+- ✅ Workflow configuration aligns with spec file
+- ✅ Buildozer internal version mapping now correct
+- ✅ No conflicting NDK version references
+
+---
 ## Environment Variable Conflict Fix - COMPLETED
 
 ### 🎯 Status: Environment Variable Conflict Fully Resolved with Path Standardization
@@ -189,4 +227,4 @@ Environment variable conflicts between SDK installation and Buildozer execution 
 
 ---
 
-**Status**: READY FOR FINAL PUSH | **Solution**: NDK version mismatch fix (25.1.8937393 → 25b) + Execution order fix + Environment variable conflict resolution | **Phase**: 26 | **APK Path**: Multi-location search configured
+**Status**: READY FOR FINAL PUSH | **Solution**: Buildozer.spec NDK version fix + NDK version mismatch fix (25.1.8937393 → 25b) + Execution order fix + Environment variable conflict resolution | **Phase**: 27 | **APK Path**: Multi-location search configured

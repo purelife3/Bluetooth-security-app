@@ -47,7 +47,7 @@ android.hardware_acceleration = True
 
 # Build settings for GitHub Actions
 android.sdk = 33
-android.ndk = 25.1.8937393
+android.ndk = 25b
 android.ndk_api = 23
 
 # Presplash (optional)
