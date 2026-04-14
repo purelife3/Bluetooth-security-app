@@ -6,7 +6,7 @@ echo "=========================="
 # Make the check script executable
 chmod +x check_git_simple.sh
 
-# Run the check 
+# Run the check
 bash check_git_simple.sh
 
 echo ""
