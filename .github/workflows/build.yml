@@ -175,23 +175,20 @@ done
 EOF
         chmod +x accept_all_licenses.sh
         
-        # Run license acceptance with SDK root specified
+        # Run license acceptance with SDK root specified - FIXED: Use yes command for proper stdin piping
         echo "📋 Running license acceptance for SDK root: $HOME/.buildozer/android/sdk"
-        ./accept_all_licenses.sh | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=$HOME/.buildozer/android/sdk 2>&1 | tee license_accept.log || {
+        yes | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=$HOME/.buildozer/android/sdk 2>&1 | tee license_accept.log || {
           echo "⚠️ License acceptance had issues, but continuing..."
         }
         
         # Method 3: Accept licenses for EACH package individually BEFORE installation
         echo "🔧 ACCEPTING LICENSES FOR EACH PACKAGE INDIVIDUALLY..."
         
-        # Function to accept license for a specific package
+        # Function to accept license for a specific package - FIXED: Use yes command
         accept_license_for_package() {
           local package="$1"
           echo "📋 Accepting license for: $package"
-          for i in {1..5}; do
-            echo "y"
-            sleep 0.1
-          done | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=$HOME/.buildozer/android/sdk 2>&1 | grep -i "$package" || true
+          yes | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=$HOME/.buildozer/android/sdk 2>&1 | grep -i "$package" || true
         }
         
         # Accept licenses for all required packages

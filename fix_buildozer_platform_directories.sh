@@ -41,6 +41,18 @@ fix_platform_directories() {
         echo "📋 Copying SDK contents to platform/android-sdk..."
         cp -r ~/.buildozer/android/sdk/* ~/.buildozer/android/platform/android-sdk/ 2>/dev/null || true
         
+        # CRITICAL: Ensure license files are copied to platform directory
+        echo "📝 Ensuring license files are copied to platform/android-sdk/licenses..."
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        if [ -d ~/.buildozer/android/sdk/licenses ]; then
+            echo "📋 Copying license files from sdk/licenses to platform/android-sdk/licenses..."
+            cp -r ~/.buildozer/android/sdk/licenses/* ~/.buildozer/android/platform/android-sdk/licenses/ 2>/dev/null || true
+        fi
+        if [ -d ~/.android/licenses ]; then
+            echo "📋 Copying license files from ~/.android/licenses to platform/android-sdk/licenses..."
+            cp -r ~/.android/licenses/* ~/.buildozer/android/platform/android-sdk/licenses/ 2>/dev/null || true
+        fi
+        
         # CRITICAL FIX: Ensure SDK tools structure exists for sdkmanager
         echo "🔧 Ensuring SDK tools structure for sdkmanager..."
         
@@ -125,6 +137,16 @@ fix_platform_directories() {
     echo "🔍 Verifying platform directories:"
     echo "Platform directory structure:"
     ls -la ~/.buildozer/android/platform/
+    
+    echo ""
+    echo "📝 Checking license files in platform/android-sdk/licenses:"
+    if [ -d ~/.buildozer/android/platform/android-sdk/licenses ]; then
+        echo "✅ License directory exists in platform/android-sdk/licenses"
+        echo "📋 License files found:"
+        ls -la ~/.buildozer/android/platform/android-sdk/licenses/ 2>/dev/null || echo "⚠️ No license files found"
+    else
+        echo "❌ License directory not found in platform/android-sdk/licenses"
+    fi
     
     echo ""
     echo "📊 Checking platform/android-sdk:"
