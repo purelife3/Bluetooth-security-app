@@ -31,36 +31,38 @@ echo "📋 Files to commit:"
 git status --porcelain
 
 # Create commit message
-COMMIT_MESSAGE="Fix: Replace symlinks with actual platform directories for Buildozer
+COMMIT_MESSAGE="Fix: Create versioned NDK directory structure for Buildozer
 
 Root cause analysis:
-- Buildozer checks platform/android-sdk as a directory (not symlink)
-- Symlinks don't work because Buildozer uses os.path.isdir() checks
-- When Buildozer finds missing directories, it creates them and attempts downloads
-- This triggers the 'ValueError: read of closed file' error during NDK download
+- Buildozer expects NDK at platform/android-ndk/android-ndk-r25.1.8937393/ (not just platform/android-ndk/)
+- GitHub Actions logs show: 'Symlink: ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393'
+- Previous directory-based solution created platform/android-ndk/ but missing versioned subdirectory
+- Buildozer still attempted NDK download due to incorrect directory hierarchy
 
 Solution implemented:
-1. Created fix_buildozer_platform_directories.sh script
-   - Creates platform/android-sdk as actual directory with SDK contents
-   - Creates platform/android-ndk as actual directory with NDK contents
+1. Updated fix_buildozer_platform_directories.sh script (lines 67-79)
+   - Creates platform/android-ndk/android-ndk-r25.1.8937393 directory structure
+   - Copies NDK contents to versioned subdirectory
+   - Maintains platform/android-sdk as directory with SDK contents
    - Removes existing symlinks and directories first
-   - Verifies directory creation and contents
 
-2. Updated GitHub Actions workflow
-   - Added call to fix_buildozer_platform_directories.sh (lines 238-241)
-   - Removed duplicate inline directory creation logic (28 lines)
-   - Maintains existing configuration fixes (fix_buildozer_config.sh, test_buildozer_config.sh)
+2. GitHub Actions workflow already configured
+   - Calls fix_buildozer_platform_directories.sh (lines 238-241)
+   - Sets ANDROID_NDK_HOME to /home/runner/.buildozer/android/sdk/ndk/25.1.8937393
+   - SDK verification shows NDK exists with CHANGELOG.md, NOTICE files, ndk-build
 
-3. Directory-based approach addresses root cause
-   - Buildozer sees platform/android-sdk and platform/android-ndk as directories
-   - No SDK/NDK download attempts by Buildozer
+3. Versioned directory approach addresses Buildozer's hierarchy requirement
+   - Buildozer expects versioned subdirectory within platform/android-ndk/
+   - Directory structure matches Buildozer's internal expectations
+   - No NDK download attempts by Buildozer
    - Eliminates 'ValueError: read of closed file' errors
 
 Expected outcome:
-- Buildozer will find platform/android-sdk and platform/android-ndk as directories
-- No SDK/NDK download attempts by Buildozer
+- Buildozer will find platform/android-ndk/android-ndk-r25.1.8937393/ as directory
+- No 'Android NDK is missing, downloading' messages
 - No 'ValueError: read of closed file' errors
-- Successful APK generation in GitHub Actions"
+- Successful APK generation in GitHub Actions
+- This is phase 25 of troubleshooting (evolved from symlink → basic directory → versioned directory)"
 
 echo ""
 echo "📝 Commit message:"
