@@ -1,0 +1,59 @@
+#!/bin/bash
+
+echo "🔍 Quick Git Status Check"
+echo "========================="
+
+# Check if we're in a git repo
+if [ ! -d ".git" ]; then
+    echo "❌ Not a git repository!"
+    echo ""
+    echo "Run these commands to initialize git:"
+    echo "git init"
+    echo "git add ."
+    echo "git commit -m 'Initial commit'"
+    echo "git remote add origin YOUR_GITHUB_REPO_URL"
+    echo "git push -u origin main"
+    exit 1
+fi
+
+echo "✅ Git repository found"
+
+# Check git status
+echo ""
+echo "📊 Git Status:"
+git status --short
+
+# Check remote
+echo ""
+echo "🌐 Remote:"
+git remote -v
+
+# Check if we have uncommitted changes
+echo ""
+echo "📝 Uncommitted changes:"
+if git diff --quiet; then
+    echo "✅ No uncommitted changes"
+else
+    echo "⚠️ You have uncommitted changes!"
+    echo ""
+    echo "Files with changes:"
+    git diff --name-only
+fi
+
+# Check if we need to push
+echo ""
+echo "📤 Push needed?"
+if git log --oneline origin/main..HEAD 2>/dev/null | grep -q .; then
+    echo "⚠️ Yes! You have commits to push"
+    echo ""
+    echo "Commits to push:"
+    git log --oneline origin/main..HEAD
+else
+    echo "✅ No commits to push (or no remote configured)"
+fi
+
+echo ""
+echo "💡 To push all changes:"
+echo "git add ."
+echo "git commit -m 'Your commit message'"
+echo "git push origin main"

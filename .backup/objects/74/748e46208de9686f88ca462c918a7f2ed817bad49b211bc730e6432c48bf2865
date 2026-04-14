@@ -1,0 +1,78 @@
+#!/bin/bash
+
+echo "🚨 URGENT: Git Status Check for Deployment"
+echo "=========================================="
+echo ""
+echo "The GitHub workflow is STILL failing because symlink fix is not deployed!"
+echo ""
+
+# Check if git is installed
+if ! command -v git &> /dev/null; then
+    echo "❌ Git is not installed!"
+    echo "Install git first: sudo apt-get install git"
+    exit 1
+fi
+
+# Check if we're in a git repo
+if [ ! -d ".git" ]; then
+    echo "❌ Not a git repository!"
+    echo ""
+    echo "QUICK SETUP:"
+    echo "1. Initialize git: git init"
+    echo "2. Add all files: git add ."
+    echo "3. Commit: git commit -m 'Initial commit'"
+    echo "4. Add remote: git remote add origin YOUR_GITHUB_REPO_URL"
+    echo "5. Push: git push -u origin main"
+    echo ""
+    echo "⚠️ Replace YOUR_GITHUB_REPO_URL with your actual GitHub repository URL"
+    exit 1
+fi
+
+echo "✅ Git repository found"
+
+# Show current status
+echo ""
+echo "📊 Current Git Status:"
+git status
+
+# Show what would be committed
+echo ""
+echo "📝 Files ready to commit:"
+git diff --name-only --cached
+
+# Show uncommitted changes
+echo ""
+echo "📝 Uncommitted changes:"
+git diff --name-only
+
+# Check remote
+echo ""
+echo "🌐 Remote repository:"
+git remote -v
+
+# Check if we have commits to push
+echo ""
+echo "📤 Commits to push:"
+if git log --oneline origin/main..HEAD 2>/dev/null | grep -q .; then
+    git log --oneline origin/main..HEAD
+    echo ""
+    echo "✅ You have commits ready to push!"
+else
+    echo "⚠️ No commits to push (or remote not configured)"
+fi
+
+echo ""
+echo "🚀 IMMEDIATE ACTION REQUIRED:"
+echo "============================="
+echo "1. If you see uncommitted changes above, run:"
+echo "   git add ."
+echo "   git commit -m 'Fix: Implement symlink solution for Buildozer platform directory issue'"
+echo ""
+echo "2. If you have commits ready to push, run:"
+echo "   git push origin main"
+echo ""
+echo "3. If no remote is configured, add your GitHub repository:"
+echo "   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git"
+echo "   git push -u origin main"
+echo ""
+echo "⚠️ Every minute you delay = GitHub Actions continues to fail!"

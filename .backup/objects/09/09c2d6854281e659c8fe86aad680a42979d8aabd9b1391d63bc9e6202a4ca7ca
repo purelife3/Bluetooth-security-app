@@ -1,0 +1,291 @@
+name: Build Android APK (Node.js 24 Optimized)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual triggering
+
+# Use Node.js 24 runner directly
+jobs:
+  build-android:
+    runs-on: ubuntu-24.04  # Use Ubuntu 24.04 which has Node.js 24 by default
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4.3.0
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5.3.0
+      with:
+        python-version: '3.12'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git \
+          build-essential \
+          libffi-dev \
+          libssl-dev \
+          python3-dev \
+          python3-pip \
+          python3-venv \
+          zip \
+          unzip \
+          openjdk-17-jdk \
+          wget \
+          curl
+        
+    - name: Install Buildozer and dependencies
+      run: |
+        python3 -m pip install --upgrade pip wheel setuptools
+        python3 -m pip install buildozer cython==0.29.36
+        
+    - name: Set up Android SDK/NDK
+      run: |
+        # Create Android SDK directory
+        mkdir -p ~/.buildozer/android/platform
+        
+        # Download and extract Android SDK command-line tools with robust retry logic
+        echo "📥 Downloading Android SDK command-line tools..."
+        
+        # Use curl with better error handling and progress tracking
+        for attempt in {1..5}; do
+          echo "📋 Attempt $attempt/5..."
+          
+          # Clean up any previous failed downloads
+          rm -f commandlinetools-linux-9477386_latest.zip commandlinetools-linux-9477386_latest.zip.part
+          
+          # Download with curl - resume support, timeout, and progress bar
+          if curl -L --retry 3 --retry-delay 5 --connect-timeout 30 --max-time 300 \
+               --progress-bar \
+               -o commandlinetools-linux-9477386_latest.zip \
+               "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip"; then
+            echo "✅ Download completed successfully"
+            
+            # Verify file size (should be > 100MB)
+            file_size=$(stat -c%s "commandlinetools-linux-9477386_latest.zip" 2>/dev/null || stat -f%z "commandlinetools-linux-9477386_latest.zip")
+            if [ "$file_size" -gt 100000000 ]; then
+              echo "✅ File size check passed: $((file_size/1024/1024)) MB"
+              break
+            else
+              echo "⚠️ File size suspiciously small: $((file_size/1024/1024)) MB"
+              if [ $attempt -eq 5 ]; then
+                echo "❌ All download attempts failed - file too small"
+                exit 1
+              fi
+              echo "Retrying in 5 seconds..."
+              sleep 5
+            fi
+          else
+            echo "⚠️ Download failed on attempt $attempt"
+            if [ $attempt -eq 5 ]; then
+              echo "❌ All download attempts failed"
+              exit 1
+            fi
+            echo "Retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        
+        # Verify download integrity with checksum
+        echo "🔍 Verifying download integrity..."
+        if [ ! -f "commandlinetools-linux-9477386_latest.zip" ]; then
+          echo "❌ Downloaded file not found"
+          exit 1
+        fi
+        
+        # Check if file is a valid zip
+        echo "📦 Checking zip file integrity..."
+        if unzip -tq commandlinetools-linux-9477386_latest.zip > /dev/null 2>&1; then
+          echo "✅ Zip file integrity check passed"
+        else
+          echo "❌ Zip file is corrupted"
+          exit 1
+        fi
+        
+        # Extract with verbose output for debugging
+        echo "📦 Extracting Android SDK..."
+        mkdir -p ~/.buildozer/android/sdk/cmdline-tools
+        unzip -q commandlinetools-linux-9477386_latest.zip -d ~/.buildozer/android/sdk/cmdline-tools
+        if [ $? -ne 0 ]; then
+          echo "❌ Extraction failed"
+          exit 1
+        fi
+        
+        mv ~/.buildozer/android/sdk/cmdline-tools/cmdline-tools ~/.buildozer/android/sdk/cmdline-tools/latest
+        
+        # Set environment variables
+        echo "🔧 Setting environment variables..."
+        echo "ANDROID_HOME=~/.buildozer/android/sdk" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=~/.buildozer/android/sdk" >> $GITHUB_ENV
+        echo "PATH=$PATH:~/.buildozer/android/sdk/cmdline-tools/latest/bin:~/.buildozer/android/sdk/platform-tools" >> $GITHUB_ENV
+        
+        # Accept licenses with better error handling
+        echo "📝 Accepting Android licenses..."
+        yes | ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 | tee license_accept.log || {
+          echo "⚠️ License acceptance had issues, continuing anyway..."
+          echo "License log:"
+          tail -20 license_accept.log
+        }
+        
+        # Install required SDK packages with progress tracking
+        echo "📦 Installing Android SDK packages (this may take several minutes)..."
+        ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager \
+          "platform-tools" \
+          "platforms;android-33" \
+          "build-tools;33.0.0" \
+          "ndk;25.1.8937393" 2>&1 | tee sdk_install.log
+        
+        echo "✅ Android SDK setup completed"
+        echo "SDK installation log summary:"
+        tail -10 sdk_install.log
+          
+    - name: Pre-download Android NDK to avoid Buildozer download errors
+      run: |
+        echo "📥 Pre-downloading Android NDK to avoid 'read of closed file' errors..."
+        
+        # Create NDK directory
+        mkdir -p ~/.buildozer/android/platform/android-ndk
+        
+        # NDK download URL (same as Buildozer uses)
+        NDK_URL="https://dl.google.com/android/repository/android-ndk-r25.1.8937393-linux.zip"
+        NDK_FILE="android-ndk-r25.1.8937393-linux.zip"
+        
+        # Download NDK with curl (robust download to avoid Python urllib issues)
+        echo "📋 Downloading Android NDK (this is ~1.5GB, may take several minutes)..."
+        
+        for attempt in {1..5}; do
+          echo "📋 Attempt $attempt/5..."
+          
+          # Clean up any previous failed downloads
+          rm -f "$NDK_FILE" "$NDK_FILE.part"
+          
+          # Download with curl - resume support, timeout, and progress bar
+          if curl -L --retry 3 --retry-delay 5 --connect-timeout 30 --max-time 600 \
+               --progress-bar \
+               -o "$NDK_FILE" \
+               "$NDK_URL"; then
+            echo "✅ NDK download completed successfully"
+            
+            # Verify file size (should be > 1GB)
+            file_size=$(stat -c%s "$NDK_FILE" 2>/dev/null || stat -f%z "$NDK_FILE")
+            if [ "$file_size" -gt 1000000000 ]; then
+              echo "✅ NDK file size check passed: $((file_size/1024/1024)) MB"
+              break
+            else
+              echo "⚠️ NDK file size suspiciously small: $((file_size/1024/1024)) MB"
+              if [ $attempt -eq 5 ]; then
+                echo "❌ All NDK download attempts failed - file too small"
+                exit 1
+              fi
+              echo "Retrying in 5 seconds..."
+              sleep 5
+            fi
+          else
+            echo "⚠️ NDK download failed on attempt $attempt"
+            if [ $attempt -eq 5 ]; then
+              echo "❌ All NDK download attempts failed"
+              exit 1
+            fi
+            echo "Retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        
+        # Verify download integrity
+        echo "🔍 Verifying NDK download integrity..."
+        if [ ! -f "$NDK_FILE" ]; then
+          echo "❌ NDK downloaded file not found"
+          exit 1
+        fi
+        
+        # Check if file is a valid zip
+        echo "📦 Checking NDK zip file integrity..."
+        if unzip -tq "$NDK_FILE" > /dev/null 2>&1; then
+          echo "✅ NDK zip file integrity check passed"
+        else
+          echo "❌ NDK zip file is corrupted"
+          exit 1
+        fi
+        
+        # Move NDK to Buildozer's expected location
+        echo "📦 Moving NDK to Buildozer cache location..."
+        mv "$NDK_FILE" ~/.buildozer/android/platform/android-ndk/
+        
+        echo "✅ Android NDK pre-download completed successfully!"
+        echo "📊 NDK cache location: ~/.buildozer/android/platform/android-ndk/$NDK_FILE"
+        
+    - name: Configure Buildozer for GitHub Actions
+      run: |
+        # Update buildozer.spec for cloud building
+        sed -i 's/android.arch = armeabi-v7a/android.arch = arm64-v8a/' buildozer.spec
+        sed -i 's/android.minapi = 21/android.minapi = 23/' buildozer.spec
+        sed -i 's/android.targetapi = 33/android.targetapi = 33/' buildozer.spec
+        
+        # Add buildozer default settings for CI
+        echo "[buildozer]" >> ~/.buildozer/default.cfg
+        echo "log_level = 2" >> ~/.buildozer/default.cfg
+        echo "warn_on_root = 0" >> ~/.buildozer/default.cfg
+        
+    - name: Build APK with Buildozer
+      run: |
+        # Clean any previous builds
+        echo "🧹 Cleaning previous builds..."
+        buildozer android clean || true
+        
+        # Create .buildozer directory if it doesn't exist
+        mkdir -p .buildozer
+        
+        # Build debug APK with increased timeout (45 minutes for first build)
+        echo "🔨 Starting APK build (this may take 30-45 minutes)..."
+        echo "Buildozer command: buildozer -v android debug"
+        
+        # Run build with detailed logging and continue on error
+        timeout 2700 buildozer -v android debug 2>&1 | tee build.log || {
+          echo "⚠️ Build failed or timed out, checking logs..."
+          echo "Build exit code: $?"
+        }
+        
+        # Check if APK was created (handle glob patterns correctly)
+        echo "📁 Checking for APK files..."
+        if ls bin/*.apk 2>/dev/null; then
+          echo "✅ APK created successfully!"
+          echo "APK files found:"
+          ls -la bin/
+          echo "APK size:"
+          du -h bin/*.apk
+        else
+          echo "❌ APK not created, checking build logs..."
+          echo "Current directory:"
+          pwd
+          echo "Directory contents:"
+          ls -la
+          echo "Build logs:"
+          find . -name "*.log" -type f | head -10
+          echo "Buildozer log tail:"
+          tail -50 build.log 2>/dev/null || echo "No build.log found"
+        fi
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4.5.0
+      with:
+        name: bluetooth-security-app
+        path: bin/*.apk
+        if-no-files-found: warn
+        retention-days: 7
+        
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4.5.0
+      with:
+        name: build-logs
+        path: |
+          .buildozer/**/*
+          buildozer.spec
+          buildozer.log
+          *.log
+        if-no-files-found: warn
+        retention-days: 7

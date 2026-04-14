@@ -1,0 +1,182 @@
+#!/bin/bash
+
+echo "🔧 Fixing Buildozer Configuration for GitHub Actions"
+echo "===================================================="
+
+# Create Buildozer default configuration
+echo "📝 Creating Buildozer default configuration..."
+mkdir -p ~/.buildozer
+
+cat > ~/.buildozer/default.cfg << 'EOF'
+[buildozer]
+log_level = 2
+warn_on_root = 0
+
+# Android SDK/NDK configuration
+android.sdk_path = ~/.buildozer/android/sdk
+android.ndk_path = ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+android.ant_path = ~/.buildozer/android/platform/apache-ant-1.9.4
+android.sdkmanager_path = ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager
+
+# Build settings
+android.skip_update = True
+android.accept_sdk_license = True
+android.allow_backup = True
+
+# Python for Android settings
+p4a.source_dir = ~/.buildozer/android/platform/python-for-android
+p4a.branch = master
+p4a.local_recipes = ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes
+
+# Build optimization
+android.verbose = True
+android.release_artifact = bin/*.apk
+android.debug_artifact = bin/*.apk
+EOF
+
+echo "✅ Buildozer default configuration created"
+
+# Update buildozer.spec with explicit paths
+echo "📝 Updating buildozer.spec with explicit paths..."
+if [ -f "buildozer.spec" ]; then
+    # Backup original spec
+    cp buildozer.spec buildozer.spec.backup
+    
+    # Read current spec and add missing configurations
+    echo "🔍 Current buildozer.spec analysis:"
+    echo "   Lines: $(wc -l < buildozer.spec)"
+    echo "   Has android.sdk_path? $(grep -q 'android.sdk_path' buildozer.spec && echo 'YES' || echo 'NO')"
+    echo "   Has android.ndk_path? $(grep -q 'android.ndk_path' buildozer.spec && echo 'YES' || echo 'NO')"
+    
+    # Create updated spec by appending missing configurations
+    cat >> buildozer.spec << 'EOF'
+
+# Explicit paths to pre-downloaded SDK/NDK (added by fix_buildozer_config.sh)
+android.sdk_path = ~/.buildozer/android/sdk
+android.ndk_path = ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+android.ant_path = ~/.buildozer/android/platform/apache-ant-1.9.4
+
+# Skip SDK/NDK downloads (we pre-download them)
+android.skip_update = True
+android.accept_sdk_license = True
+EOF
+    
+    echo "✅ buildozer.spec updated with explicit paths"
+    echo "   Added android.sdk_path, android.ndk_path, android.ant_path"
+    echo "   Added android.skip_update = True"
+    echo "   Added android.accept_sdk_license = True"
+else
+    echo "❌ buildozer.spec not found!"
+    exit 1
+fi
+
+# Create environment setup script
+echo "📝 Creating environment setup script..."
+cat > setup_environment.sh << 'EOF'
+#!/bin/bash
+
+echo "🔧 Setting up Buildozer environment..."
+
+# Set environment variables
+export ANDROID_HOME="$HOME/.buildozer/android/sdk"
+export ANDROID_SDK_ROOT="$HOME/.buildozer/android/sdk"
+export ANDROID_NDK_HOME="$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+export ANDROID_NDK_ROOT="$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_NDK_HOME"
+
+# Create Buildozer directories
+mkdir -p "$HOME/.buildozer/android/sdk"
+mkdir -p "$HOME/.buildozer/android/platform/android-ndk"
+mkdir -p "$HOME/.buildozer/android/platform/apache-ant-1.9.4"
+
+# Verify environment
+echo "✅ Environment variables set:"
+echo "   ANDROID_HOME: $ANDROID_HOME"
+echo "   ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+echo "   ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
+echo "   PATH updated with Android tools"
+
+# Check if directories exist
+echo "📁 Checking directories:"
+if [ -d "$ANDROID_HOME" ]; then
+    echo "   ✅ ANDROID_HOME exists"
+else
+    echo "   ⚠️ ANDROID_HOME does not exist (will be created by workflow)"
+fi
+
+if [ -d "$ANDROID_NDK_HOME" ]; then
+    echo "   ✅ ANDROID_NDK_HOME exists"
+else
+    echo "   ⚠️ ANDROID_NDK_HOME does not exist (will be created by workflow)"
+fi
+EOF
+
+chmod +x setup_environment.sh
+echo "✅ Environment setup script created"
+
+# Create a test script to verify Buildozer configuration
+echo "📝 Creating Buildozer configuration test script..."
+cat > test_buildozer_config.sh << 'EOF'
+#!/bin/bash
+
+echo "🔍 Testing Buildozer Configuration"
+echo "=================================="
+
+# Check Buildozer version
+echo "📋 Buildozer version:"
+buildozer --version 2>/dev/null || echo "Buildozer not found"
+
+# Check Python version
+echo "📋 Python version:"
+python3 --version
+
+# Check if buildozer.spec exists
+echo "📋 Checking buildozer.spec:"
+if [ -f "buildozer.spec" ]; then
+    echo "✅ buildozer.spec found"
+    echo "   Size: $(wc -l < buildozer.spec) lines"
+    
+    # Check key configurations
+    echo "🔍 Checking key configurations:"
+    grep -E "(android\.(sdk|ndk|arch|minapi|targetapi)|requirements|title)" buildozer.spec
+else
+    echo "❌ buildozer.spec not found"
+fi
+
+# Check Buildozer default config
+echo "📋 Checking Buildozer default configuration:"
+if [ -f ~/.buildozer/default.cfg ]; then
+    echo "✅ ~/.buildozer/default.cfg found"
+    echo "   Size: $(wc -l < ~/.buildozer/default.cfg) lines"
+else
+    echo "⚠️ ~/.buildozer/default.cfg not found"
+fi
+
+# Check environment variables
+echo "📋 Checking environment variables:"
+env | grep -i android || echo "No Android environment variables set"
+
+# Test Buildozer initialization
+echo "🔧 Testing Buildozer initialization (dry run)..."
+buildozer android debug --dry-run 2>&1 | head -20
+
+echo "✅ Configuration test completed"
+EOF
+
+chmod +x test_buildozer_config.sh
+echo "✅ Buildozer configuration test script created"
+
+echo ""
+echo "🎯 Fix Summary:"
+echo "1. Created ~/.buildozer/default.cfg with explicit SDK/NDK paths"
+echo "2. Updated buildozer.spec with android.sdk_path and android.ndk_path"
+echo "3. Created setup_environment.sh script for GitHub Actions"
+echo "4. Created test_buildozer_config.sh to verify configuration"
+echo ""
+echo "📋 Next steps:"
+echo "1. Run: chmod +x fix_buildozer_config.sh"
+echo "2. Run: ./fix_buildozer_config.sh"
+echo "3. Run: ./test_buildozer_config.sh to verify"
+echo "4. Update GitHub Actions workflow to source setup_environment.sh"
+echo ""
+echo "⚠️ Important: The workflow needs to set environment variables BEFORE Buildozer runs!"

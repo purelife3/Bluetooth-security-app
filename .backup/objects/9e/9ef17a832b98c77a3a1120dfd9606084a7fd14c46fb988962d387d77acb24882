@@ -1,0 +1,24 @@
+[buildozer]
+log_level = 2
+warn_on_root = 0
+
+# Android SDK/NDK configuration
+android.sdk_path = ~/.buildozer/android/sdk
+android.ndk_path = ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+android.ant_path = ~/.buildozer/android/platform/apache-ant-1.9.4
+android.sdkmanager_path = ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager
+
+# Build settings
+android.skip_update = True
+android.accept_sdk_license = True
+android.allow_backup = True
+
+# Python for Android settings
+p4a.source_dir = ~/.buildozer/android/platform/python-for-android
+p4a.branch = master
+p4a.local_recipes = ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes
+
+# Build optimization
+android.verbose = True
+android.release_artifact = bin/*.apk
+android.debug_artifact = bin/*.apk

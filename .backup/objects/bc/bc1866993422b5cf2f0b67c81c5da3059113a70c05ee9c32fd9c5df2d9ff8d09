@@ -1,0 +1,108 @@
+#!/bin/bash
+
+echo "🚨 IMMEDIATE GIT STATUS CHECK 🚨"
+echo "================================="
+echo ""
+
+# Check if git is installed
+if ! command -v git &> /dev/null; then
+    echo "❌ Git is not installed!"
+    echo "Install git with: sudo apt-get install git"
+    exit 1
+fi
+
+echo "✅ Git is installed: $(git --version)"
+
+# Check if we're in a git repo
+if [ ! -d ".git" ]; then
+    echo "❌ NOT IN A GIT REPOSITORY!"
+    echo ""
+    echo "To initialize git:"
+    echo "  git init"
+    echo "  git add ."
+    echo "  git commit -m 'Initial commit'"
+    echo "  git remote add origin YOUR_GITHUB_REPO_URL"
+    echo "  git push -u origin main"
+    echo ""
+    echo "Current directory: $(pwd)"
+    echo "Directory contents:"
+    ls -la
+    exit 1
+fi
+
+echo "✅ In a git repository"
+
+# Check current branch
+echo ""
+echo "🌿 Current branch: $(git branch --show-current)"
+
+# Check remote
+echo ""
+echo "🌐 Remote repositories:"
+git remote -v
+
+if [ -z "$(git remote -v)" ]; then
+    echo "❌ NO REMOTE REPOSITORY CONFIGURED!"
+    echo ""
+    echo "To add a remote:"
+    echo "  git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git"
+    echo ""
+    echo "First, check if you have a GitHub repository created."
+    exit 1
+fi
+
+# Check git status
+echo ""
+echo "📊 Git status (detailed):"
+git status
+
+# Check for uncommitted changes
+echo ""
+echo "📝 Uncommitted changes:"
+if git diff --quiet; then
+    echo "✅ No uncommitted changes"
+else
+    echo "⚠️ UNCOMMITTED CHANGES DETECTED!"
+    echo ""
+    echo "Files with changes:"
+    git diff --name-only
+    echo ""
+    echo "To commit these changes:"
+    echo "  git add ."
+    echo "  git commit -m 'Your commit message'"
+fi
+
+# Check if we need to push
+echo ""
+echo "📤 Push status:"
+if git log --oneline origin/$(git branch --show-current)..HEAD 2>/dev/null | grep -q .; then
+    echo "⚠️ COMMITS NEED TO BE PUSHED!"
+    echo ""
+    echo "Commits to push:"
+    git log --oneline origin/$(git branch --show-current)..HEAD
+    echo ""
+    echo "To push: git push origin $(git branch --show-current)"
+else
+    echo "✅ No commits to push"
+fi
+
+# Show last commit
+echo ""
+echo "📅 Last commit:"
+git log --oneline -1
+
+echo ""
+echo "💡 IMMEDIATE ACTION REQUIRED:"
+echo "=============================="
+if git diff --quiet; then
+    if git log --oneline origin/$(git branch --show-current)..HEAD 2>/dev/null | grep -q .; then
+        echo "1. Push your commits: git push origin $(git branch --show-current)"
+    else
+        echo "✅ Everything is up to date!"
+    fi
+else
+    echo "1. Commit your changes:"
+    echo "   git add ."
+    echo "   git commit -m 'Fix: Implement symlink solution for Buildozer platform directory issue'"
+    echo "2. Push: git push origin $(git branch --show-current)"
+fi

@@ -47,8 +47,8 @@ jobs:
         
     - name: Set up Android SDK/NDK
       run: |
-        # Create Android SDK directory (use sdk directory, not platform)
-        mkdir -p ~/.buildozer/android/sdk
+        # Create Android SDK directory
+        mkdir -p ~/.buildozer/android/platform
         
         # Download and extract Android SDK command-line tools with robust retry logic
         echo "📥 Downloading Android SDK command-line tools..."
@@ -123,9 +123,7 @@ jobs:
         echo "🔧 Setting environment variables..."
         echo "ANDROID_HOME=~/.buildozer/android/sdk" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=~/.buildozer/android/sdk" >> $GITHUB_ENV
-        echo "ANDROID_NDK_HOME=~/.buildozer/android/sdk/ndk/25.1.8937393" >> $GITHUB_ENV
-        echo "ANDROID_NDK_ROOT=~/.buildozer/android/sdk/ndk/25.1.8937393" >> $GITHUB_ENV
-        echo "PATH=$PATH:~/.buildozer/android/sdk/cmdline-tools/latest/bin:~/.buildozer/android/sdk/platform-tools:~/.buildozer/android/sdk/ndk/25.1.8937393" >> $GITHUB_ENV
+        echo "PATH=$PATH:~/.buildozer/android/sdk/cmdline-tools/latest/bin:~/.buildozer/android/sdk/platform-tools" >> $GITHUB_ENV
         
         # Accept licenses with better error handling
         echo "📝 Accepting Android licenses..."
@@ -151,8 +149,8 @@ jobs:
       run: |
         echo "📥 Pre-downloading Android NDK to avoid 'read of closed file' errors..."
         
-        # Create NDK directory (use sdk/ndk structure, not platform)
-        mkdir -p ~/.buildozer/android/sdk/ndk/25.1.8937393
+        # Create NDK directory
+        mkdir -p ~/.buildozer/android/platform/android-ndk
         
         # Try multiple NDK download URLs - Google's URLs can be tricky
         # First, let's check what Buildozer actually tries to download
@@ -180,6 +178,10 @@ jobs:
         if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
           echo "✅ NDK downloaded successfully via sdkmanager!"
           echo "📊 NDK location: ~/.buildozer/android/sdk/ndk/25.1.8937393"
+          
+          # Create a symlink to Buildozer's expected location
+          echo "🔗 Creating symlink for Buildozer..."
+          ln -sf ~/.buildozer/android/sdk/ndk/25.1.8937393 ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
           
           echo "✅ Android NDK setup completed via sdkmanager!"
         else
@@ -209,13 +211,12 @@ jobs:
             if [ "$file_size" -gt 1000000000 ]; then
               echo "✅ NDK file size check passed: $((file_size/1024/1024)) MB"
               
-              # Extract NDK to sdk directory structure
+              # Extract NDK
               echo "📦 Extracting NDK..."
-              mkdir -p ~/.buildozer/android/sdk/ndk/25.1.8937393
-              unzip -q "$NDK_FILE" -d /tmp/
+              unzip -q "$NDK_FILE" -d ~/.buildozer/android/platform/android-ndk/
               
-              # Move NDK to correct location
-              mv /tmp/android-ndk-r25b/* ~/.buildozer/android/sdk/ndk/25.1.8937393/
+              # Create expected directory structure
+              mv ~/.buildozer/android/platform/android-ndk/android-ndk-r25b ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
               
               echo "✅ NDK fallback download successful!"
             else
@@ -230,37 +231,15 @@ jobs:
         
     - name: Configure Buildozer for GitHub Actions
       run: |
-        # Run the comprehensive Buildozer configuration fix
-        echo "🔧 Running Buildozer configuration fix..."
-        chmod +x fix_buildozer_config.sh
-        ./fix_buildozer_config.sh
+        # Update buildozer.spec for cloud building
+        sed -i 's/android.arch = armeabi-v7a/android.arch = arm64-v8a/' buildozer.spec
+        sed -i 's/android.minapi = 21/android.minapi = 23/' buildozer.spec
+        sed -i 's/android.targetapi = 33/android.targetapi = 33/' buildozer.spec
         
-        # Run the platform directory fix (replaces symlinks with actual directories)
-        echo "📁 Running platform directory fix..."
-        chmod +x fix_buildozer_platform_directories.sh
-        ./fix_buildozer_platform_directories.sh
-        
-        # Test the configuration
-        echo "🔍 Testing Buildozer configuration..."
-        ./test_buildozer_config.sh
-        
-        
-        
-    - name: Set up Buildozer environment
-      run: |
-        # Source the environment setup script
-        echo "🔧 Setting up Buildozer environment..."
-        source setup_environment.sh
-        
-        # Verify environment variables are set
-        echo "📋 Environment verification:"
-        echo "ANDROID_HOME: $ANDROID_HOME"
-        echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
-        echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
-        
-        # Check if Buildozer can find our SDK/NDK
-        echo "🔍 Checking Buildozer configuration..."
-        buildozer android debug --dry-run 2>&1 | grep -E "(SDK|NDK|sdk|ndk)" | head -10
+        # Add buildozer default settings for CI
+        echo "[buildozer]" >> ~/.buildozer/default.cfg
+        echo "log_level = 2" >> ~/.buildozer/default.cfg
+        echo "warn_on_root = 0" >> ~/.buildozer/default.cfg
         
     - name: Build APK with Buildozer
       run: |
@@ -271,42 +250,9 @@ jobs:
         # Create .buildozer directory if it doesn't exist
         mkdir -p .buildozer
         
-        # Set environment variables for Buildozer
-        echo "🔧 Setting environment for Buildozer..."
-        export ANDROID_HOME="$HOME/.buildozer/android/sdk"
-        export ANDROID_SDK_ROOT="$HOME/.buildozer/android/sdk"
-        export ANDROID_NDK_HOME="$HOME/.buildozer/android/sdk/ndk/25.1.8937393"
-        export ANDROID_NDK_ROOT="$HOME/.buildozer/android/sdk/ndk/25.1.8937393"
-        export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_NDK_HOME"
-        
-        # Verify Buildozer can see our SDK/NDK
-        echo "🔍 Verifying SDK/NDK locations..."
-        if [ -d "$ANDROID_HOME" ]; then
-          echo "✅ ANDROID_HOME exists: $ANDROID_HOME"
-          ls -la "$ANDROID_HOME/cmdline-tools/" 2>/dev/null || echo "⚠️ cmdline-tools not found"
-        else
-          echo "❌ ANDROID_HOME not found: $ANDROID_HOME"
-        fi
-        
-        if [ -d "$ANDROID_NDK_HOME" ]; then
-          echo "✅ ANDROID_NDK_HOME exists: $ANDROID_NDK_HOME"
-          echo "📊 NDK contents:"
-          ls -la "$ANDROID_NDK_HOME/" | head -10
-        else
-          echo "❌ ANDROID_NDK_HOME not found: $ANDROID_NDK_HOME"
-          echo "📁 Checking for NDK in other locations..."
-          find ~/.buildozer -name "*ndk*" -type d 2>/dev/null | head -5
-        fi
-        
         # Build debug APK with increased timeout (45 minutes for first build)
         echo "🔨 Starting APK build (this may take 30-45 minutes)..."
         echo "Buildozer command: buildozer -v android debug"
-        echo "Using SDK: $ANDROID_HOME"
-        echo "Using NDK: $ANDROID_NDK_HOME"
-        echo "📋 NDK path verification:"
-        echo "   Default.cfg: ~/.buildozer/android/sdk/ndk/25.1.8937393"
-        echo "   Environment: $ANDROID_NDK_HOME"
-        echo "   Symlink: ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
         
         # Run build with detailed logging and continue on error
         timeout 2700 buildozer -v android debug 2>&1 | tee build.log || {
@@ -323,29 +269,22 @@ jobs:
           echo "APK size:"
           du -h bin/*.apk
         else
-          echo "❌ APK not found in bin/, checking alternative locations..."
+          echo "❌ APK not created, checking build logs..."
           echo "Current directory:"
           pwd
           echo "Directory contents:"
           ls -la
-          
-          # Check Buildozer's default output locations
-          echo "🔍 Searching for APK files in common locations..."
-          find . -name "*.apk" -type f 2>/dev/null | head -10
-          find ~/.buildozer -name "*.apk" -type f 2>/dev/null | head -10
-          
-          echo "📋 Buildozer log tail:"
-          tail -100 build.log 2>/dev/null | grep -E "(APK|apk|build|error|success)" || echo "No build.log found"
+          echo "Build logs:"
+          find . -name "*.log" -type f | head -10
+          echo "Buildozer log tail:"
+          tail -50 build.log 2>/dev/null || echo "No build.log found"
         fi
         
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4.5.0  # Latest version built for Node.js 24
       with:
         name: bluetooth-security-app
-        path: |
-          bin/*.apk
-          .buildozer/android/app/build/outputs/apk/debug/*.apk
-          ~/.buildozer/android/app/build/outputs/apk/debug/*.apk
+        path: bin/*.apk
         if-no-files-found: warn
         retention-days: 7
         

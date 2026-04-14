@@ -1,0 +1,40 @@
+#!/bin/bash
+
+echo "🔍 Current Git Status"
+echo "===================="
+
+# Check if we're in a git repo
+if [ ! -d ".git" ]; then
+    echo "❌ Not a git repository!"
+    exit 1
+fi
+
+echo "✅ Git repository found"
+
+# Show git status
+echo ""
+echo "📊 Git Status:"
+git status
+
+# Show what would be committed
+echo ""
+echo "📝 Changes to be committed:"
+git diff --cached --name-only
+
+echo ""
+echo "📝 Unstaged changes:"
+git diff --name-only
+
+echo ""
+echo "🌐 Remote information:"
+git remote -v
+
+echo ""
+echo "📋 List of modified files:"
+git status --porcelain
+
+echo ""
+echo "💡 To push all changes:"
+echo "1. Add all changes: git add ."
+echo "2. Commit: git commit -m 'Fix: Symlink solution for Buildozer platform directory issue'"
+echo "3. Push: git push origin main"

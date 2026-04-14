@@ -57,8 +57,6 @@ Expected outcome:
 - No 'Android NDK is missing, downloading' messages
 - No 'ValueError: read of closed file' errors
 - Successful APK generation in GitHub Actions
-- APK found via multi-location search (bin/, .buildozer/android/app/build/outputs/apk/debug/, ~/.buildozer/android/app/build/outputs/apk/debug/)
-- APK artifact uploaded successfully
 - This is phase 25 of troubleshooting (evolved from symlink → basic directory → versioned directory)"
 
 echo ""
@@ -77,8 +75,6 @@ echo "   - ✅ NDK contents copied to versioned subdirectory"
 echo "   - No 'Android NDK is missing, downloading' message"
 echo "   - No 'ValueError: read of closed file' error"
 echo "   - ✅ APK created successfully!"
-echo "   - ✅ APK found via multi-location search"
-echo "   - ✅ APK artifact uploaded successfully"
 echo ""
 echo "🔧 If the workflow still fails, check the logs for any new errors"
 echo "   and share them for further troubleshooting."

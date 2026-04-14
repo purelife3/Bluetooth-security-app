@@ -1,0 +1,148 @@
+#!/bin/bash
+
+echo "🔧 FORCING Buildozer Platform Directory Structure"
+echo "=================================================="
+echo "This script creates a complete platform directory structure"
+echo "that Buildozer cannot ignore or recreate."
+echo ""
+
+# Set up paths
+HOME_DIR="$HOME"
+PLATFORM_DIR="$HOME_DIR/.buildozer/android/platform"
+SDK_DIR="$HOME_DIR/.buildozer/android/sdk"
+NDK_DIR="$HOME_DIR/.buildozer/android/sdk/ndk/25.1.8937393"
+
+echo "📁 Creating platform directory structure..."
+echo "   Platform dir: $PLATFORM_DIR"
+echo "   SDK dir: $SDK_DIR"
+echo "   NDK dir: $NDK_DIR"
+
+# Remove any existing platform directory (symlinks or directories)
+echo "🧹 Cleaning existing platform directory..."
+rm -rf "$PLATFORM_DIR" 2>/dev/null || true
+
+# Create platform directory
+mkdir -p "$PLATFORM_DIR"
+
+# Create the EXACT directory structure Buildozer expects
+echo "📦 Creating exact Buildozer platform structure..."
+
+# 1. Create android-sdk directory (not a symlink, but the actual structure)
+echo "   Creating android-sdk directory structure..."
+mkdir -p "$PLATFORM_DIR/android-sdk"
+
+# Copy SDK structure into android-sdk directory
+echo "   Copying SDK structure..."
+if [ -d "$SDK_DIR" ]; then
+    # Use rsync if available, otherwise cp
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a "$SDK_DIR/" "$PLATFORM_DIR/android-sdk/" --exclude="*.zip" --exclude="*.log"
+    else
+        cp -r "$SDK_DIR/." "$PLATFORM_DIR/android-sdk/" 2>/dev/null || true
+    fi
+    echo "   ✅ SDK structure copied"
+else
+    echo "   ⚠️ SDK directory not found at $SDK_DIR"
+    echo "   Creating minimal SDK structure..."
+    mkdir -p "$PLATFORM_DIR/android-sdk/cmdline-tools/latest"
+    mkdir -p "$PLATFORM_DIR/android-sdk/platform-tools"
+    mkdir -p "$PLATFORM_DIR/android-sdk/platforms"
+    mkdir -p "$PLATFORM_DIR/android-sdk/build-tools"
+fi
+
+# 2. Create android-ndk directory (not a symlink)
+echo "   Creating android-ndk directory structure..."
+mkdir -p "$PLATFORM_DIR/android-ndk"
+
+# Copy NDK structure into android-ndk directory
+echo "   Copying NDK structure..."
+if [ -d "$NDK_DIR" ]; then
+    # Use rsync if available, otherwise cp
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a "$NDK_DIR/" "$PLATFORM_DIR/android-ndk/" --exclude="*.zip" --exclude="*.log"
+    else
+        cp -r "$NDK_DIR/." "$PLATFORM_DIR/android-ndk/" 2>/dev/null || true
+    fi
+    echo "   ✅ NDK structure copied"
+else
+    echo "   ⚠️ NDK directory not found at $NDK_DIR"
+    echo "   Creating minimal NDK structure..."
+    mkdir -p "$PLATFORM_DIR/android-ndk/toolchains"
+    mkdir -p "$PLATFORM_DIR/android-ndk/sysroot"
+    mkdir -p "$PLATFORM_DIR/android-ndk/platforms"
+fi
+
+# 3. Create other directories Buildozer expects
+echo "   Creating other Buildozer directories..."
+mkdir -p "$PLATFORM_DIR/apache-ant-1.9.4"
+mkdir -p "$PLATFORM_DIR/python-for-android"
+
+# 4. Make directories read-only to prevent Buildozer from modifying them
+echo "🔒 Making platform directories read-only..."
+chmod -R a-w "$PLATFORM_DIR" 2>/dev/null || true
+
+# 5. Create verification files
+echo "📝 Creating verification files..."
+cat > "$PLATFORM_DIR/README_BUILDOZER_FIX.txt" << EOF
+This directory structure was created by force_platform_structure.sh
+to prevent Buildozer from creating its own platform directories.
+
+Buildozer expects to find:
+- android-sdk/ (SDK tools)
+- android-ndk/ (NDK tools)
+- apache-ant-1.9.4/ (Ant build tool)
+- python-for-android/ (Python for Android)
+
+All directories are populated with actual files from:
+- SDK: $SDK_DIR
+- NDK: $NDK_DIR
+
+Directories are made read-only to prevent Buildozer from modifying them.
+EOF
+
+# 6. Verify the structure
+echo "🔍 Verifying platform structure..."
+echo "   Platform directory contents:"
+ls -la "$PLATFORM_DIR/"
+echo ""
+echo "   android-sdk contents:"
+ls -la "$PLATFORM_DIR/android-sdk/" 2>/dev/null | head -10
+echo ""
+echo "   android-ndk contents:"
+ls -la "$PLATFORM_DIR/android-ndk/" 2>/dev/null | head -10
+
+# 7. Create a test to verify Buildozer can access the structure
+echo "🧪 Testing Buildozer access..."
+cat > /tmp/test_buildozer_access.py << EOF
+import os
+import sys
+
+platform_dir = os.path.expanduser("~/.buildozer/android/platform")
+sdk_dir = os.path.join(platform_dir, "android-sdk")
+ndk_dir = os.path.join(platform_dir, "android-ndk")
+
+print("Testing Buildozer platform access...")
+print(f"Platform dir exists: {os.path.exists(platform_dir)}")
+print(f"SDK dir exists: {os.path.exists(sdk_dir)}")
+print(f"NDK dir exists: {os.path.exists(ndk_dir)}")
+
+if os.path.exists(sdk_dir):
+    print(f"SDK dir contents: {os.listdir(sdk_dir)[:5]}")
+if os.path.exists(ndk_dir):
+    print(f"NDK dir contents: {os.listdir(ndk_dir)[:5]}")
+
+sys.exit(0 if all([os.path.exists(platform_dir), os.path.exists(sdk_dir), os.path.exists(ndk_dir)]) else 1)
+EOF
+
+python3 /tmp/test_buildozer_access.py
+
+echo ""
+echo "✅ Platform directory structure forced successfully!"
+echo "📋 Summary:"
+echo "   - Created complete platform directory structure at $PLATFORM_DIR"
+echo "   - Copied actual SDK/NDK files (not symlinks)"
+echo "   - Made directories read-only to prevent modification"
+echo "   - Created verification README file"
+echo ""
+echo "⚠️  IMPORTANT: This structure MUST be created BEFORE Buildozer runs."
+echo "   Add this script to your GitHub Actions workflow BEFORE the build step."

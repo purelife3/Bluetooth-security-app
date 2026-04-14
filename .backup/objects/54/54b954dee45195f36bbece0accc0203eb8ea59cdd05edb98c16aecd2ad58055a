@@ -1,0 +1,75 @@
+#!/bin/bash
+
+echo "🔍 Verifying NDK Configuration Consistency"
+echo "=========================================="
+
+echo ""
+echo "📋 Checking NDK path consistency across all configuration files:"
+echo ""
+
+# 1. Check workflow file
+echo "1. GitHub Actions Workflow (.github/workflows/build.yml):"
+if grep -n "ANDROID_NDK_HOME" .github/workflows/build.yml; then
+    echo "   ✅ Found ANDROID_NDK_HOME in workflow"
+else
+    echo "   ❌ ANDROID_NDK_HOME not found in workflow"
+fi
+
+echo ""
+echo "2. Buildozer Default Configuration (~/.buildozer/default.cfg):"
+if [ -f ~/.buildozer/default.cfg ]; then
+    echo "   ✅ Default.cfg exists"
+    grep "android.ndk_path" ~/.buildozer/default.cfg
+else
+    echo "   ⚠️ Default.cfg not found (will be created by fix_buildozer_config.sh)"
+fi
+
+echo ""
+echo "3. Buildozer.spec file:"
+if grep -n "android.ndk_path" buildozer.spec; then
+    echo "   ⚠️ NDK path in buildozer.spec (may cause DuplicateOptionError)"
+else
+    echo "   ✅ No NDK path in buildozer.spec (correct - should be in default.cfg)"
+fi
+
+echo ""
+echo "4. Setup Environment Script (setup_environment.sh):"
+if [ -f setup_environment.sh ]; then
+    echo "   ✅ setup_environment.sh exists"
+    grep "ANDROID_NDK_HOME" setup_environment.sh
+else
+    echo "   ❌ setup_environment.sh not found"
+fi
+
+echo ""
+echo "5. Fix Buildozer Config Script (fix_buildozer_config.sh):"
+if [ -f fix_buildozer_config.sh ]; then
+    echo "   ✅ fix_buildozer_config.sh exists"
+    grep -n "android.ndk_path" fix_buildozer_config.sh
+else
+    echo "   ❌ fix_buildozer_config.sh not found"
+fi
+
+echo ""
+echo "📊 Summary of NDK paths:"
+echo "========================="
+echo "Expected NDK path: ~/.buildozer/android/sdk/ndk/25.1.8937393"
+echo ""
+
+# Check if paths are consistent
+echo "🔍 Checking for path inconsistencies:"
+echo ""
+
+# Check for old symlink path
+if grep -r "platform/android-ndk/android-ndk-r25.1.8937393" .github/workflows/build.yml fix_buildozer_config.sh setup_environment.sh 2>/dev/null; then
+    echo "⚠️ Found old symlink path in configuration files"
+else
+    echo "✅ No old symlink paths found"
+fi
+
+echo ""
+echo "🚀 Next steps:"
+echo "1. Run: ./fix_buildozer_config.sh"
+echo "2. Run: ./verify_ndk_config.sh"
+echo "3. Push changes to GitHub"
+echo "4. Trigger workflow to test the consistent NDK path configuration"

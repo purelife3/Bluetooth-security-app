@@ -19,7 +19,7 @@ git status --short
 echo ""
 echo "🔍 Key files that contain the versioned directory solution:"
 echo "   - fix_buildozer_platform_directories.sh (lines 67-79: versioned NDK directory)"
-echo "   - .github/workflows/build.yml (lines 238-241: calls directory fix script, lines 326-338: multi-path APK search)"
+echo "   - .github/workflows/build.yml (lines 238-241: calls directory fix script)"
 echo "   - push_platform_directory_fix.sh (updated commit message)"
 
 echo ""
@@ -57,8 +57,6 @@ Expected outcome:
 - No 'Android NDK is missing, downloading' messages
 - No 'ValueError: read of closed file' errors
 - Successful APK generation in GitHub Actions
-- APK found via multi-location search (bin/, .buildozer/android/app/build/outputs/apk/debug/, ~/.buildozer/android/app/build/outputs/apk/debug/)
-- APK artifact uploaded successfully
 - This is phase 25 of troubleshooting (evolved from symlink → basic directory → versioned directory)"
 
 echo ""
@@ -72,13 +70,11 @@ echo "📊 Next steps:"
 echo "1. Go to GitHub Actions in your repository"
 echo "2. Wait for the workflow to start automatically (triggered by push)"
 echo "3. Monitor the logs for these success indicators:"
-echo "   - ✅ Created platform/android-ndk/android-ndk-r25.1.8937393/ directory"
-echo "   - ✅ NDK contents copied to versioned subdirectory"
+echo "   - ✅ Created symlink: platform/android-sdk -> sdk"
+echo "   - ✅ Created symlink: platform/android-ndk -> sdk/ndk/25.1.8937393"
 echo "   - No 'Android NDK is missing, downloading' message"
 echo "   - No 'ValueError: read of closed file' error"
 echo "   - ✅ APK created successfully!"
-echo "   - ✅ APK found via multi-location search"
-echo "   - ✅ APK artifact uploaded successfully"
 echo ""
 echo "🔧 If the workflow still fails, check the logs for any new errors"
 echo "   and share them for further troubleshooting."

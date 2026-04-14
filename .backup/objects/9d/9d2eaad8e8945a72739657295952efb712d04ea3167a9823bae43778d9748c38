@@ -235,16 +235,39 @@ jobs:
         chmod +x fix_buildozer_config.sh
         ./fix_buildozer_config.sh
         
-        # Run the platform directory fix (replaces symlinks with actual directories)
-        echo "📁 Running platform directory fix..."
-        chmod +x fix_buildozer_platform_directories.sh
-        ./fix_buildozer_platform_directories.sh
-        
         # Test the configuration
         echo "🔍 Testing Buildozer configuration..."
         ./test_buildozer_config.sh
         
+        # CRITICAL: Create platform directories with actual SDK/NDK contents
+        echo "📁 Creating platform directories with SDK/NDK contents..."
+        mkdir -p ~/.buildozer/android/platform
         
+        # Create platform/android-sdk as actual directory with SDK contents
+        if [ -d ~/.buildozer/android/sdk ]; then
+            echo "📋 Copying SDK to platform/android-sdk..."
+            mkdir -p ~/.buildozer/android/platform/android-sdk
+            cp -r ~/.buildozer/android/sdk/* ~/.buildozer/android/platform/android-sdk/ 2>/dev/null || true
+            echo "✅ platform/android-sdk created with SDK contents"
+        else
+            echo "⚠️ SDK not found, creating empty platform/android-sdk"
+            mkdir -p ~/.buildozer/android/platform/android-sdk
+        fi
+        
+        # Create platform/android-ndk as actual directory with NDK contents
+        if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
+            echo "📋 Copying NDK to platform/android-ndk..."
+            mkdir -p ~/.buildozer/android/platform/android-ndk
+            cp -r ~/.buildozer/android/sdk/ndk/25.1.8937393/* ~/.buildozer/android/platform/android-ndk/ 2>/dev/null || true
+            echo "✅ platform/android-ndk created with NDK contents"
+        else
+            echo "⚠️ NDK not found, creating empty platform/android-ndk"
+            mkdir -p ~/.buildozer/android/platform/android-ndk
+        fi
+        
+        # Verify platform directories
+        echo "🔍 Verifying platform directories:"
+        ls -la ~/.buildozer/android/platform/ | grep -E "(android-sdk|android-ndk)"
         
     - name: Set up Buildozer environment
       run: |
@@ -323,29 +346,22 @@ jobs:
           echo "APK size:"
           du -h bin/*.apk
         else
-          echo "❌ APK not found in bin/, checking alternative locations..."
+          echo "❌ APK not created, checking build logs..."
           echo "Current directory:"
           pwd
           echo "Directory contents:"
           ls -la
-          
-          # Check Buildozer's default output locations
-          echo "🔍 Searching for APK files in common locations..."
-          find . -name "*.apk" -type f 2>/dev/null | head -10
-          find ~/.buildozer -name "*.apk" -type f 2>/dev/null | head -10
-          
-          echo "📋 Buildozer log tail:"
-          tail -100 build.log 2>/dev/null | grep -E "(APK|apk|build|error|success)" || echo "No build.log found"
+          echo "Build logs:"
+          find . -name "*.log" -type f | head -10
+          echo "Buildozer log tail:"
+          tail -50 build.log 2>/dev/null || echo "No build.log found"
         fi
         
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4.5.0  # Latest version built for Node.js 24
       with:
         name: bluetooth-security-app
-        path: |
-          bin/*.apk
-          .buildozer/android/app/build/outputs/apk/debug/*.apk
-          ~/.buildozer/android/app/build/outputs/apk/debug/*.apk
+        path: bin/*.apk
         if-no-files-found: warn
         retention-days: 7
         

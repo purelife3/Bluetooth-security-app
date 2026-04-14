@@ -235,16 +235,23 @@ jobs:
         chmod +x fix_buildozer_config.sh
         ./fix_buildozer_config.sh
         
-        # Run the platform directory fix (replaces symlinks with actual directories)
-        echo "📁 Running platform directory fix..."
-        chmod +x fix_buildozer_platform_directories.sh
-        ./fix_buildozer_platform_directories.sh
-        
         # Test the configuration
         echo "🔍 Testing Buildozer configuration..."
         ./test_buildozer_config.sh
         
+        # CRITICAL: Force platform directory structure BEFORE Buildozer runs
+        echo "🔧 Forcing Buildozer platform directory structure..."
+        chmod +x force_platform_structure.sh
+        ./force_platform_structure.sh
         
+        # Verify the forced structure
+        echo "🔍 Verifying forced platform structure..."
+        echo "Platform directory contents:"
+        ls -la ~/.buildozer/android/platform/
+        echo ""
+        echo "Checking if directories are read-only:"
+        ls -ld ~/.buildozer/android/platform/android-sdk
+        ls -ld ~/.buildozer/android/platform/android-ndk
         
     - name: Set up Buildozer environment
       run: |
@@ -323,29 +330,22 @@ jobs:
           echo "APK size:"
           du -h bin/*.apk
         else
-          echo "❌ APK not found in bin/, checking alternative locations..."
+          echo "❌ APK not created, checking build logs..."
           echo "Current directory:"
           pwd
           echo "Directory contents:"
           ls -la
-          
-          # Check Buildozer's default output locations
-          echo "🔍 Searching for APK files in common locations..."
-          find . -name "*.apk" -type f 2>/dev/null | head -10
-          find ~/.buildozer -name "*.apk" -type f 2>/dev/null | head -10
-          
-          echo "📋 Buildozer log tail:"
-          tail -100 build.log 2>/dev/null | grep -E "(APK|apk|build|error|success)" || echo "No build.log found"
+          echo "Build logs:"
+          find . -name "*.log" -type f | head -10
+          echo "Buildozer log tail:"
+          tail -50 build.log 2>/dev/null || echo "No build.log found"
         fi
         
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4.5.0  # Latest version built for Node.js 24
       with:
         name: bluetooth-security-app
-        path: |
-          bin/*.apk
-          .buildozer/android/app/build/outputs/apk/debug/*.apk
-          ~/.buildozer/android/app/build/outputs/apk/debug/*.apk
+        path: bin/*.apk
         if-no-files-found: warn
         retention-days: 7
         

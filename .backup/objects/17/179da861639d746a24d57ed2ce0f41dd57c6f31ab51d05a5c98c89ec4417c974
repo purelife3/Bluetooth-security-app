@@ -1,0 +1,262 @@
+#!/bin/bash
+
+echo "🔧 Fixing Buildozer Configuration for GitHub Actions"
+echo "===================================================="
+
+# Create Buildozer default configuration
+echo "📝 Creating Buildozer default configuration..."
+mkdir -p ~/.buildozer
+
+cat > ~/.buildozer/default.cfg << 'EOF'
+[buildozer]
+log_level = 2
+warn_on_root = 0
+
+# Android SDK/NDK configuration
+android.sdk_path = ~/.buildozer/android/sdk
+android.ndk_path = ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+android.ant_path = ~/.buildozer/android/platform/apache-ant-1.9.4
+android.sdkmanager_path = ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager
+
+# Build settings
+android.skip_update = True
+android.accept_sdk_license = True
+android.allow_backup = True
+
+# Python for Android settings
+p4a.source_dir = ~/.buildozer/android/platform/python-for-android
+p4a.branch = master
+p4a.local_recipes = ~/.buildozer/android/platform/python-for-android/pythonforandroid/recipes
+
+# Build optimization
+android.verbose = True
+android.release_artifact = bin/*.apk
+android.debug_artifact = bin/*.apk
+EOF
+
+echo "✅ Buildozer default configuration created"
+
+# Update buildozer.spec with explicit paths
+echo "📝 Updating buildozer.spec with explicit paths..."
+if [ -f "buildozer.spec" ]; then
+    # Backup original spec
+    cp buildozer.spec buildozer.spec.backup
+    
+    # Create updated spec
+    cat > buildozer.spec << 'EOF'
+[app]
+
+# Title of your application
+title = Bluetooth Security Manager
+
+# Package name
+package.name = bluetoothsecurity
+
+# Package domain
+package.domain = org.security
+
+# Source directory
+source.dir = .
+
+# Source files to include
+source.include_exts = py,png,jpg,kv,atlas
+
+# Application version
+version = 1.0
+
+# Application requirements
+requirements = python3,kivy==2.3.0,plyer,pyjnius,android
+
+# Supported orientation
+orientation = portrait
+
+# Android architecture (optimized for GitHub Actions - ARM64)
+android.arch = arm64-v8a
+
+# Android permissions (Bluetooth permissions for Android 12+)
+android.permissions = BLUETOOTH,BLUETOOTH_ADMIN,BLUETOOTH_SCAN,BLUETOOTH_CONNECT,ACCESS_FINE_LOCATION,ACCESS_COARSE_LOCATION
+
+# Minimum SDK version (Android 6.0 - required for GitHub Actions)
+android.minapi = 23
+
+# Target SDK version (Android 13)
+android.targetapi = 33
+
+# Enable debugging
+android.enable_debuggable = True
+
+# Logcat filters
+android.logcat_filters = *:S python:D
+
+# Hardware acceleration
+android.hardware_acceleration = True
+
+# Build settings for GitHub Actions
+android.sdk = 33
+android.ndk = 25.1.8937393
+android.ndk_api = 23
+
+# Explicit paths to pre-downloaded SDK/NDK
+android.sdk_path = ~/.buildozer/android/sdk
+android.ndk_path = ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393
+android.ant_path = ~/.buildozer/android/platform/apache-ant-1.9.4
+
+# Skip SDK/NDK downloads (we pre-download them)
+android.skip_update = True
+android.accept_sdk_license = True
+
+# Presplash (optional)
+# presplash.filename = %(source.dir)s/data/presplash.png
+
+# Icon (optional)
+# icon.filename = %(source.dir)s/data/icon.png
+
+# Fullscreen mode
+fullscreen = 0
+
+# Window size
+size = 360x640
+
+# Log level
+log_level = 2
+
+# Build mode
+build_mode = debug
+
+# Python version
+python.version = 3.11
+
+# Android entry point
+android.entrypoint = org.security.bluetoothsecurity
+
+# Android activity class name
+android.activity_class_name = PythonActivity
+
+# Android manifest additions (for Bluetooth on Android 12+)
+android.manifest_merger = True
+android.manifest_merger_extra = |
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+                     android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+                     android:maxSdkVersion="30" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="true" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+EOF
+    
+    echo "✅ buildozer.spec updated with explicit paths"
+else
+    echo "❌ buildozer.spec not found!"
+    exit 1
+fi
+
+# Create environment setup script
+echo "📝 Creating environment setup script..."
+cat > setup_environment.sh << 'EOF'
+#!/bin/bash
+
+echo "🔧 Setting up Buildozer environment..."
+
+# Set environment variables
+export ANDROID_HOME="$HOME/.buildozer/android/sdk"
+export ANDROID_SDK_ROOT="$HOME/.buildozer/android/sdk"
+export ANDROID_NDK_HOME="$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+export ANDROID_NDK_ROOT="$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393"
+export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_NDK_HOME"
+
+# Create Buildozer directories
+mkdir -p "$HOME/.buildozer/android/sdk"
+mkdir -p "$HOME/.buildozer/android/platform/android-ndk"
+mkdir -p "$HOME/.buildozer/android/platform/apache-ant-1.9.4"
+
+# Verify environment
+echo "✅ Environment variables set:"
+echo "   ANDROID_HOME: $ANDROID_HOME"
+echo "   ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+echo "   ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
+echo "   PATH updated with Android tools"
+
+# Check if directories exist
+echo "📁 Checking directories:"
+if [ -d "$ANDROID_HOME" ]; then
+    echo "   ✅ ANDROID_HOME exists"
+else
+    echo "   ⚠️ ANDROID_HOME does not exist (will be created by workflow)"
+fi
+
+if [ -d "$ANDROID_NDK_HOME" ]; then
+    echo "   ✅ ANDROID_NDK_HOME exists"
+else
+    echo "   ⚠️ ANDROID_NDK_HOME does not exist (will be created by workflow)"
+fi
+EOF
+
+chmod +x setup_environment.sh
+echo "✅ Environment setup script created"
+
+# Create a test script to verify Buildozer configuration
+echo "📝 Creating Buildozer configuration test script..."
+cat > test_buildozer_config.sh << 'EOF'
+#!/bin/bash
+
+echo "🔍 Testing Buildozer Configuration"
+echo "=================================="
+
+# Check Buildozer version
+echo "📋 Buildozer version:"
+buildozer --version 2>/dev/null || echo "Buildozer not found"
+
+# Check Python version
+echo "📋 Python version:"
+python3 --version
+
+# Check if buildozer.spec exists
+echo "📋 Checking buildozer.spec:"
+if [ -f "buildozer.spec" ]; then
+    echo "✅ buildozer.spec found"
+    echo "   Size: $(wc -l < buildozer.spec) lines"
+    
+    # Check key configurations
+    echo "🔍 Checking key configurations:"
+    grep -E "(android\.(sdk|ndk|arch|minapi|targetapi)|requirements|title)" buildozer.spec
+else
+    echo "❌ buildozer.spec not found"
+fi
+
+# Check Buildozer default config
+echo "📋 Checking Buildozer default configuration:"
+if [ -f ~/.buildozer/default.cfg ]; then
+    echo "✅ ~/.buildozer/default.cfg found"
+    echo "   Size: $(wc -l < ~/.buildozer/default.cfg) lines"
+else
+    echo "⚠️ ~/.buildozer/default.cfg not found"
+fi
+
+# Check environment variables
+echo "📋 Checking environment variables:"
+env | grep -i android || echo "No Android environment variables set"
+
+# Test Buildozer initialization
+echo "🔧 Testing Buildozer initialization (dry run)..."
+buildozer android debug --dry-run 2>&1 | head -20
+
+echo "✅ Configuration test completed"
+EOF
+
+chmod +x test_buildozer_config.sh
+echo "✅ Buildozer configuration test script created"
+
+echo ""
+echo "🎯 Fix Summary:"
+echo "1. Created ~/.buildozer/default.cfg with explicit SDK/NDK paths"
+echo "2. Updated buildozer.spec with android.sdk_path and android.ndk_path"
+echo "3. Created setup_environment.sh script for GitHub Actions"
+echo "4. Created test_buildozer_config.sh to verify configuration"
+echo ""
+echo "📋 Next steps:"
+echo "1. Run: chmod +x fix_buildozer_config.sh"
+echo "2. Run: ./fix_buildozer_config.sh"
+echo "3. Run: ./test_buildozer_config.sh to verify"
+echo "4. Update GitHub Actions workflow to source setup_environment.sh"
+echo ""
+echo "⚠️ Important: The workflow needs to set environment variables BEFORE Buildozer runs!"

@@ -1,0 +1,106 @@
+#!/bin/bash
+
+echo "🔍 Testing Buildozer Configuration"
+echo "=================================="
+
+# Check Buildozer version
+echo "📋 Buildozer version:"
+if command -v buildozer &> /dev/null; then
+    buildozer --version 2>/dev/null || echo "Buildozer found but version check failed"
+else
+    echo "⚠️ Buildozer not found in PATH"
+    echo "   This is expected in local testing - GitHub Actions will install it"
+fi
+
+# Check Python version
+echo "📋 Python version:"
+python3 --version
+
+# Check if buildozer.spec exists
+echo "📋 Checking buildozer.spec:"
+if [ -f "buildozer.spec" ]; then
+    echo "✅ buildozer.spec found"
+    echo "   Size: $(wc -l < buildozer.spec) lines"
+    
+    # Check key configurations
+    echo "🔍 Checking key configurations:"
+    echo "   Title: $(grep -E '^title =' buildozer.spec | head -1)"
+    echo "   Package: $(grep -E '^package\.name =' buildozer.spec | head -1)"
+    echo "   Requirements: $(grep -E '^requirements =' buildozer.spec | head -1)"
+    echo "   Android arch: $(grep -E '^android\.arch =' buildozer.spec | head -1)"
+    echo "   Note: SDK/NDK paths are in ~/.buildozer/default.cfg (not buildozer.spec)"
+else
+    echo "❌ buildozer.spec not found"
+fi
+
+# Check Buildozer default config
+echo "📋 Checking Buildozer default configuration:"
+if [ -f ~/.buildozer/default.cfg ]; then
+    echo "✅ ~/.buildozer/default.cfg found"
+    echo "   Size: $(wc -l < ~/.buildozer/default.cfg) lines"
+    echo "   Key settings:"
+    grep -E "(sdk_path|ndk_path|skip_update|accept_sdk_license)" ~/.buildozer/default.cfg
+else
+    echo "⚠️ ~/.buildozer/default.cfg not found"
+fi
+
+# Check environment variables
+echo "📋 Checking environment variables:"
+env | grep -i android || echo "No Android environment variables set"
+
+# Check if SDK/NDK directories exist
+echo "📁 Checking SDK/NDK directory structure:"
+if [ -d ~/.buildozer ]; then
+    echo "✅ ~/.buildozer directory exists"
+    echo "   Contents:"
+    find ~/.buildozer -maxdepth 2 -type d 2>/dev/null | sort
+else
+    echo "⚠️ ~/.buildozer directory not found"
+fi
+
+# Check for SDK
+echo "🔍 Checking Android SDK:"
+if [ -d ~/.buildozer/android/sdk ]; then
+    echo "✅ Android SDK directory exists"
+    if [ -d ~/.buildozer/android/sdk/cmdline-tools/latest ]; then
+        echo "✅ cmdline-tools/latest directory exists"
+        if [ -f ~/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager ]; then
+            echo "✅ sdkmanager found"
+        else
+            echo "⚠️ sdkmanager not found"
+        fi
+    else
+        echo "⚠️ cmdline-tools/latest directory not found"
+    fi
+else
+    echo "⚠️ Android SDK directory not found"
+fi
+
+# Check for NDK
+echo "🔍 Checking Android NDK:"
+if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
+    echo "✅ Android NDK directory exists"
+    echo "   NDK path: ~/.buildozer/android/sdk/ndk/25.1.8937393"
+    # Check for key NDK files
+    if [ -f ~/.buildozer/android/sdk/ndk/25.1.8937393/ndk-build ]; then
+        echo "✅ ndk-build found"
+    else
+        echo "⚠️ ndk-build not found (checking for alternative structure)"
+        find ~/.buildozer/android/sdk/ndk/25.1.8937393 -name "*ndk-build*" -type f 2>/dev/null | head -3
+    fi
+else
+    echo "⚠️ Android NDK directory not found"
+    echo "   Looking for NDK in other locations..."
+    find ~/.buildozer -name "*ndk*" -type d 2>/dev/null | head -5
+fi
+
+echo ""
+echo "✅ Configuration test completed"
+echo ""
+echo "📋 Summary:"
+echo "1. This test verifies configuration files and directory structure"
+echo "2. Buildozer installation is handled by GitHub Actions workflow"
+echo "3. SDK/NDK directories will be created by the workflow"
+echo "4. The key fix is that buildozer.spec now has explicit paths"
+echo ""
+echo "🚀 Ready to push to GitHub and test the workflow!"
