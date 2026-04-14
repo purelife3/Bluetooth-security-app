@@ -235,26 +235,16 @@ jobs:
         chmod +x fix_buildozer_config.sh
         ./fix_buildozer_config.sh
         
+        # Run the platform directory fix (replaces symlinks with actual directories)
+        echo "📁 Running platform directory fix..."
+        chmod +x fix_buildozer_platform_directories.sh
+        ./fix_buildozer_platform_directories.sh
+        
         # Test the configuration
         echo "🔍 Testing Buildozer configuration..."
         ./test_buildozer_config.sh
         
-        # CRITICAL: Create symlinks to prevent Buildozer platform directory creation
-        echo "🔗 Creating symlinks to prevent Buildozer from creating platform directories..."
-        mkdir -p ~/.buildozer/android/platform
-        if [ ! -L ~/.buildozer/android/platform/android-sdk ]; then
-            ln -sf ~/.buildozer/android/sdk ~/.buildozer/android/platform/android-sdk
-            echo "✅ Created symlink: platform/android-sdk -> sdk"
-        fi
         
-        if [ ! -L ~/.buildozer/android/platform/android-ndk ]; then
-            ln -sf ~/.buildozer/android/sdk/ndk/25.1.8937393 ~/.buildozer/android/platform/android-ndk
-            echo "✅ Created symlink: platform/android-ndk -> sdk/ndk/25.1.8937393"
-        fi
-        
-        # Verify symlinks
-        echo "🔍 Verifying symlinks:"
-        ls -la ~/.buildozer/android/platform/ | grep -E "(android-sdk|android-ndk)"
         
     - name: Set up Buildozer environment
       run: |
