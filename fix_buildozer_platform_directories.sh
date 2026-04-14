@@ -41,7 +41,48 @@ fix_platform_directories() {
         echo "📋 Copying SDK contents to platform/android-sdk..."
         cp -r ~/.buildozer/android/sdk/* ~/.buildozer/android/platform/android-sdk/ 2>/dev/null || true
         
-        echo "✅ platform/android-sdk created with SDK contents"
+        # CRITICAL FIX: Ensure SDK tools structure exists for sdkmanager
+        echo "🔧 Ensuring SDK tools structure for sdkmanager..."
+        
+        # Check if sdkmanager exists in cmdline-tools/latest/bin/
+        if [ -f ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ]; then
+            echo "✅ Found sdkmanager in cmdline-tools/latest/bin/"
+            
+            # Create the expected tools/bin directory structure
+            mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
+            
+            # Create symlink from cmdline-tools/latest/bin/sdkmanager to tools/bin/sdkmanager
+            echo "🔗 Creating symlink: tools/bin/sdkmanager -> cmdline-tools/latest/bin/sdkmanager"
+            ln -sf ../cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+            
+            # Also create symlink for avdmanager if it exists
+            if [ -f ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/avdmanager ]; then
+                ln -sf ../cmdline-tools/latest/bin/avdmanager ~/.buildozer/android/platform/android-sdk/tools/bin/avdmanager
+            fi
+            
+            echo "✅ SDK tools structure created for Buildozer compatibility"
+        else
+            echo "⚠️ sdkmanager not found in cmdline-tools/latest/bin/"
+            echo "   Searching for sdkmanager in other locations..."
+            
+            # Try to find sdkmanager anywhere in the SDK
+            SDKMANAGER_PATH=$(find ~/.buildozer/android/platform/android-sdk -name "sdkmanager" -type f 2>/dev/null | head -1)
+            if [ -n "$SDKMANAGER_PATH" ]; then
+                echo "✅ Found sdkmanager at: $SDKMANAGER_PATH"
+                
+                # Create tools/bin directory
+                mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
+                
+                # Create symlink to the found sdkmanager
+                echo "🔗 Creating symlink to found sdkmanager"
+                ln -sf "$(realpath --relative-to=~/.buildozer/android/platform/android-sdk/tools/bin "$SDKMANAGER_PATH")" ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+            else
+                echo "❌ sdkmanager not found anywhere in the SDK"
+                echo "   Buildozer may fail SDK verification"
+            fi
+        fi
+        
+        echo "✅ platform/android-sdk created with SDK contents and tools structure"
     else
         echo "⚠️ SDK not found in sdk/ directory"
         echo "   Creating empty platform/android-sdk directory"
@@ -142,7 +183,27 @@ update_workflow_file() {
             echo "📋 Copying SDK to platform/android-sdk..."
             mkdir -p ~/.buildozer/android/platform/android-sdk
             cp -r ~/.buildozer/android/sdk/* ~/.buildozer/android/platform/android-sdk/ 2>/dev/null || true
-            echo "✅ platform/android-sdk created with SDK contents"
+            
+            # CRITICAL: Ensure SDK tools structure exists for sdkmanager
+            echo "🔧 Ensuring SDK tools structure for sdkmanager..."
+            if [ -f ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ]; then
+                echo "✅ Found sdkmanager in cmdline-tools/latest/bin/"
+                mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
+                ln -sf ../cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+                echo "✅ SDK tools structure created for Buildozer compatibility"
+            else
+                echo "⚠️ sdkmanager not found in cmdline-tools/latest/bin/"
+                SDKMANAGER_PATH=$(find ~/.buildozer/android/platform/android-sdk -name "sdkmanager" -type f 2>/dev/null | head -1)
+                if [ -n "$SDKMANAGER_PATH" ]; then
+                    echo "✅ Found sdkmanager at: $SDKMANAGER_PATH"
+                    mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
+                    ln -sf "$(realpath --relative-to=~/.buildozer/android/platform/android-sdk/tools/bin "$SDKMANAGER_PATH")" ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+                else
+                    echo "❌ sdkmanager not found anywhere in the SDK"
+                fi
+            fi
+            
+            echo "✅ platform/android-sdk created with SDK contents and tools structure"
         else
             echo "⚠️ SDK not found, creating empty platform/android-sdk"
             mkdir -p ~/.buildozer/android/platform/android-sdk

@@ -45,8 +45,8 @@ else
     echo "⚠️ Original SDK directory not found"
 fi
 
-if [ -d ~/.buildozer/android/sdk/ndk/25.1.8937393 ]; then
-    echo "✅ Original NDK directory exists: ~/.buildozer/android/sdk/ndk/25.1.8937393"
+if [ -d ~/.buildozer/android/sdk/ndk/25b ]; then
+    echo "✅ Original NDK directory exists: ~/.buildozer/android/sdk/ndk/25b"
 else
     echo "⚠️ Original NDK directory not found"
 fi
