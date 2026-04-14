@@ -21,30 +21,30 @@ echo ""
 echo "🔍 Checking key files:"
 echo "---------------------"
 
+# Check versioned directory fix script
+if [ -f "fix_buildozer_platform_directories.sh" ]; then
+    echo -n "Versioned directory fix script: "
+    if grep -q "platform/android-ndk/android-ndk-r25.1.8937393" fix_buildozer_platform_directories.sh; then
+        echo "✅ Contains versioned directory solution"
+    else
+        echo "❌ Missing versioned directory solution"
+    fi
+else
+    echo "❌ Versioned directory fix script not found"
+fi
+
 # Check workflow file
 if [ -f ".github/workflows/build.yml" ]; then
     echo -n "Workflow file: "
-    if grep -q "CRITICAL: Create symlinks" .github/workflows/build.yml; then
-        echo "✅ Contains symlink fix"
+    if grep -q "fix_buildozer_platform_directories.sh" .github/workflows/build.yml; then
+        echo "✅ Calls directory fix script"
     else
-        echo "❌ Missing symlink fix"
+        echo "❌ Missing directory fix script call"
     fi
 else
     echo "❌ Workflow file not found"
 fi
 
-# Check fix_buildozer_config.sh
-if [ -f "fix_buildozer_config.sh" ]; then
-    echo -n "Fix script: "
-    if grep -q "Create symbolic links" fix_buildozer_config.sh; then
-        echo "✅ Contains symlink logic"
-    else
-        echo "❌ Missing symlink logic"
-    fi
-else
-    echo "❌ Fix script not found"
-fi
-
 echo ""
-echo "🚀 To push changes:"
-echo "   chmod +x push_now.sh && ./push_now.sh"
+echo "🚀 To push versioned directory fix:"
+echo "   chmod +x execute_push.sh && ./execute_push.sh"
