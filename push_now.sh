@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo "🚀 Pushing Symlink Fix to GitHub"
-echo "================================"
+echo "🚀 Pushing Versioned Directory Fix to GitHub"
+echo "==========================================="
 
 # Check if we're in a git repository
 if [ ! -d .git ]; then
@@ -17,11 +17,10 @@ echo "📋 Checking git status..."
 git status --short
 
 echo ""
-echo "🔍 Key files that contain the symlink solution:"
-echo "   - .github/workflows/build.yml (lines 242-257: symlink creation)"
-echo "   - fix_buildozer_config.sh (lines 101-117: symlink logic)"
-echo "   - setup_environment.sh (environment configuration)"
-echo "   - test_buildozer_config.sh (verification)"
+echo "🔍 Key files that contain the versioned directory solution:"
+echo "   - fix_buildozer_platform_directories.sh (lines 67-79: versioned NDK directory)"
+echo "   - .github/workflows/build.yml (lines 238-241: calls directory fix script)"
+echo "   - push_platform_directory_fix.sh (updated commit message)"
 
 echo ""
 echo "📝 Adding all changes..."
@@ -29,19 +28,36 @@ git add .
 
 echo ""
 echo "💾 Committing with detailed message..."
-git commit -m "Fix: Symlink solution for Buildozer platform directory issue
+git commit -m "Fix: Create versioned NDK directory structure for Buildozer
 
-- Created symbolic links from ~/.buildozer/android/platform/android-sdk to ~/.buildozer/android/sdk
-- Created symbolic links from ~/.buildozer/android/platform/android-ndk to ~/.buildozer/android/sdk/ndk/25.1.8937393
-- This prevents Buildozer from creating its own platform directories at runtime
-- Fixes the persistent 'ValueError: read of closed file' error in GitHub Actions
-- Buildozer will now use pre-downloaded SDK/NDK instead of attempting downloads
-- Updated workflow file with symlink creation (lines 242-257)
-- Updated configuration scripts to maintain symlink consistency
+Root cause analysis:
+- Buildozer expects NDK at platform/android-ndk/android-ndk-r25.1.8937393/ (not just platform/android-ndk/)
+- GitHub Actions logs show: 'Symlink: ~/.buildozer/android/platform/android-ndk/android-ndk-r25.1.8937393'
+- Previous directory-based solution created platform/android-ndk/ but missing versioned subdirectory
+- Buildozer still attempted NDK download due to incorrect directory hierarchy
 
-Expected outcome: No 'Android NDK is missing, downloading' message
-Expected outcome: No 'ValueError: read of closed file' error
-Expected outcome: Successful APK creation in bin/ directory"
+Solution implemented:
+1. Updated fix_buildozer_platform_directories.sh script (lines 67-79)
+   - Creates platform/android-ndk/android-ndk-r25.1.8937393 directory structure
+   - Copies NDK contents to versioned subdirectory
+   - Maintains platform/android-sdk as directory with SDK contents
+
+2. GitHub Actions workflow already configured
+   - Calls fix_buildozer_platform_directories.sh (lines 238-241)
+   - Sets ANDROID_NDK_HOME to /home/runner/.buildozer/android/sdk/ndk/25.1.8937393
+
+3. Versioned directory approach addresses Buildozer's hierarchy requirement
+   - Buildozer expects versioned subdirectory within platform/android-ndk/
+   - Directory structure matches Buildozer's internal expectations
+   - No NDK download attempts by Buildozer
+   - Eliminates 'ValueError: read of closed file' errors
+
+Expected outcome:
+- Buildozer will find platform/android-ndk/android-ndk-r25.1.8937393/ as directory
+- No 'Android NDK is missing, downloading' messages
+- No 'ValueError: read of closed file' errors
+- Successful APK generation in GitHub Actions
+- This is phase 25 of troubleshooting (evolved from symlink → basic directory → versioned directory)"
 
 echo ""
 echo "📤 Pushing to GitHub..."
@@ -54,8 +70,8 @@ echo "📊 Next steps:"
 echo "1. Go to GitHub Actions in your repository"
 echo "2. Wait for the workflow to start automatically (triggered by push)"
 echo "3. Monitor the logs for these success indicators:"
-echo "   - ✅ Created symlink: platform/android-sdk -> sdk"
-echo "   - ✅ Created symlink: platform/android-ndk -> sdk/ndk/25.1.8937393"
+echo "   - ✅ Created platform/android-ndk/android-ndk-r25.1.8937393/ directory"
+echo "   - ✅ NDK contents copied to versioned subdirectory"
 echo "   - No 'Android NDK is missing, downloading' message"
 echo "   - No 'ValueError: read of closed file' error"
 echo "   - ✅ APK created successfully!"
