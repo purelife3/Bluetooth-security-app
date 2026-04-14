@@ -196,6 +196,10 @@ EOF
         accept_license_for_package "build-tools"
         accept_license_for_package "ndk"
         
+        # CRITICAL: After SDK installation, accept license specifically for Build-Tools 37.0.0
+        echo "🔧 CRITICAL: Accepting license specifically for Build-Tools 37.0.0..."
+        echo "y" | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=$HOME/.buildozer/android/sdk 2>&1 | grep -i "build-tools" || true
+        
         # Verify licenses were accepted
         echo "🔍 Verifying license acceptance..."
         echo "📋 License files in $HOME/.android/licenses/:"
@@ -215,8 +219,10 @@ EOF
         $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --list --sdk_root=$HOME/.buildozer/android/sdk 2>&1 | head -20
         
         # Install required SDK packages with progress tracking (using temporary SDK location)
+        # CRITICAL: Use yes command to automatically accept ALL licenses during installation
         echo "📦 Installing Android SDK packages (this may take several minutes)..."
-        $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/sdk \
+        echo "🔧 Using 'yes' to automatically accept ALL licenses during installation..."
+        yes | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/sdk \
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.0" \
