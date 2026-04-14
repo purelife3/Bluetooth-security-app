@@ -128,24 +128,63 @@ jobs:
         echo "ANDROID_NDK_ROOT_TEMP=$HOME/.buildozer/android/sdk/ndk/25b" >> $GITHUB_ENV
         echo "PATH_TEMP=$PATH:$HOME/.buildozer/android/sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/sdk/platform-tools:$HOME/.buildozer/android/sdk/ndk/25b" >> $GITHUB_ENV
         
-        # Accept licenses with better error handling (using temporary SDK location)
-        echo "📝 Accepting Android licenses..."
-        # Create a license acceptance file to avoid interactive prompts
-        mkdir -p $HOME/.android
+        # ACCEPT LICENSES - CRITICAL FIX FOR PLATFORM-TOOLS
+        echo "📝 ACCEPTING ALL ANDROID LICENSES (CRITICAL FOR PLATFORM-TOOLS)..."
+        
+        # Method 1: Create comprehensive license acceptance files
+        echo "🔧 Creating comprehensive license acceptance files..."
+        mkdir -p $HOME/.android/licenses
         echo "### Android SDK License Acceptance File ###" > $HOME/.android/licenses/android-sdk-license
         echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $HOME/.android/licenses/android-sdk-license
         echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/licenses/android-sdk-license
         echo "84831b9409646a918e30573b4ad6d4e7e5c2f256" >> $HOME/.android/licenses/android-sdk-license
         echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" >> $HOME/.android/licenses/android-sdk-license
         echo "601085b94cd77f0b54ff86406957099ebe79c4d6" >> $HOME/.android/licenses/android-sdk-license
-        echo "84d987c6c7d8b3947b8b8b8b8b8b8b8b8b8b8b8" >> $HOME/.android/licenses/android-sdk-license
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/licenses/android-sdk-license  # Platform-tools license
         
-        # Also try the yes command but with proper handling
-        echo "y" | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 | tee license_accept.log || {
-          echo "⚠️ License acceptance had issues, checking if licenses were already accepted..."
-          echo "License log:"
-          tail -20 license_accept.log
+        # Create platform-tools specific license file
+        echo "### Android SDK Platform-Tools License ###" > $HOME/.android/licenses/android-sdk-platform-tools-license
+        echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/licenses/android-sdk-platform-tools-license
+        
+        # Method 2: Use 'yes' command to accept ALL licenses (repeats 'y' for every prompt)
+        echo "🔧 Using 'yes' command to accept all license prompts..."
+        yes | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 | tee license_accept.log || {
+          echo "⚠️ First license acceptance attempt had issues, trying alternative approach..."
         }
+        
+        # Method 3: If yes fails, try multiple echo "y" for all expected prompts
+        echo "🔧 Trying alternative license acceptance method..."
+        for i in {1..10}; do
+          echo "y"
+        done | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 | tee -a license_accept.log || {
+          echo "⚠️ Alternative method also had issues..."
+        }
+        
+        # Method 4: Direct license file creation with ALL known Android SDK licenses
+        echo "🔧 Creating direct license acceptance files..."
+        mkdir -p $HOME/.android/licenses
+        cat > $HOME/.android/licenses/android-sdk-license << 'EOF'
+8933bad161af4178b1185d1a37fbf41ea5269c55
+d56f5187479451eabf01fb78af6dfcb131a6481e
+84831b9409646a918e30573b4ad6d4e7e5c2f256
+33b6a2b64607f11b759f320ef9dff4ae5c47d97a
+601085b94cd77f0b54ff86406957099ebe79c4d6
+24333f8a63b6825ea9c5514f83c2829b004d1fee
+EOF
+        
+        # Verify licenses were accepted
+        echo "🔍 Verifying license acceptance..."
+        if [ -f "$HOME/.android/licenses/android-sdk-license" ]; then
+          echo "✅ License file created: $HOME/.android/licenses/android-sdk-license"
+          echo "📋 License file contents:"
+          cat $HOME/.android/licenses/android-sdk-license
+        else
+          echo "❌ License file not created!"
+        fi
+        
+        # Final verification: Check if sdkmanager can run without license prompts
+        echo "🔍 Testing license acceptance with sdkmanager list..."
+        $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --list 2>&1 | head -20
         
         # Install required SDK packages with progress tracking (using temporary SDK location)
         echo "📦 Installing Android SDK packages (this may take several minutes)..."
