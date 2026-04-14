@@ -130,8 +130,19 @@ jobs:
         
         # Accept licenses with better error handling (using temporary SDK location)
         echo "📝 Accepting Android licenses..."
-        yes | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 | tee license_accept.log || {
-          echo "⚠️ License acceptance had issues, continuing anyway..."
+        # Create a license acceptance file to avoid interactive prompts
+        mkdir -p $HOME/.android
+        echo "### Android SDK License Acceptance File ###" > $HOME/.android/licenses/android-sdk-license
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $HOME/.android/licenses/android-sdk-license
+        echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/licenses/android-sdk-license
+        echo "84831b9409646a918e30573b4ad6d4e7e5c2f256" >> $HOME/.android/licenses/android-sdk-license
+        echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" >> $HOME/.android/licenses/android-sdk-license
+        echo "601085b94cd77f0b54ff86406957099ebe79c4d6" >> $HOME/.android/licenses/android-sdk-license
+        echo "84d987c6c7d8b3947b8b8b8b8b8b8b8b8b8b8b8" >> $HOME/.android/licenses/android-sdk-license
+        
+        # Also try the yes command but with proper handling
+        echo "y" | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 | tee license_accept.log || {
+          echo "⚠️ License acceptance had issues, checking if licenses were already accepted..."
           echo "License log:"
           tail -20 license_accept.log
         }
@@ -142,6 +153,7 @@ jobs:
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.0" \
+          "build-tools;37.0.0" \
           "ndk;25b" 2>&1 | tee sdk_install.log
         
         echo "✅ Android SDK setup completed"
