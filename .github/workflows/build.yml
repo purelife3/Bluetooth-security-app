@@ -194,7 +194,6 @@ EOF
         # Accept licenses for all required packages
         accept_license_for_package "platform-tools"
         accept_license_for_package "build-tools"
-        accept_license_for_package "ndk"
         
         # CRITICAL: After SDK installation, accept license specifically for Build-Tools 37.0.0
         echo "🔧 CRITICAL: Accepting license specifically for Build-Tools 37.0.0..."
@@ -220,99 +219,25 @@ EOF
         
         # Install required SDK packages with progress tracking (using temporary SDK location)
         # CRITICAL: Use yes command to automatically accept ALL licenses during installation
+        # IMPORTANT: Do NOT install NDK via sdkmanager - it will be downloaded by fix script to platform directory
         echo "📦 Installing Android SDK packages (this may take several minutes)..."
         echo "🔧 Using 'yes' to automatically accept ALL licenses during installation..."
+        echo "📋 Note: NDK will be downloaded separately by fix script to platform directory"
         yes | $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/sdk \
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.0" \
-          "build-tools;37.0.0" \
-          "ndk;25b" 2>&1 | tee sdk_install.log
+          "build-tools;37.0.0" 2>&1 | tee sdk_install.log
         
-        echo "✅ Android SDK setup completed"
+        echo "✅ Android SDK setup completed (NDK will be downloaded separately)"
         echo "SDK installation log summary:"
         tail -10 sdk_install.log
           
     - name: Pre-download Android NDK to avoid Buildozer download errors
       run: |
-        echo "📥 Pre-downloading Android NDK to avoid 'read of closed file' errors..."
-        
-        # Create NDK directory (use sdk/ndk structure, not platform)
-        mkdir -p $HOME/.buildozer/android/sdk/ndk/25b
-        
-        # Try multiple NDK download URLs - Google's URLs can be tricky
-        # First, let's check what Buildozer actually tries to download
-        echo "🔍 Checking available NDK download options..."
-        
-        # Option 1: Official Google NDK download (may require authentication)
-        # Option 2: Use sdkmanager to download NDK (more reliable)
-        echo "📦 Using sdkmanager to download Android NDK..."
-        
-        # First, make sure sdkmanager is available
-        if [ ! -f $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager ]; then
-          echo "❌ sdkmanager not found! SDK setup may have failed."
-          exit 1
-        fi
-        
-        # Download NDK using sdkmanager (this is what Buildozer should do internally)
-        echo "📋 Downloading Android NDK via sdkmanager (this is ~1.5GB, may take several minutes)..."
-        
-        # Run sdkmanager with progress tracking (using temporary SDK location)
-        $HOME/.buildozer/android/sdk/cmdline-tools/latest/bin/sdkmanager \
-          "ndk;25b" 2>&1 | tee ndk_download.log
-        
-        # Check if NDK was downloaded successfully
-        echo "🔍 Checking if NDK was downloaded..."
-        if [ -d $HOME/.buildozer/android/sdk/ndk/25b ]; then
-          echo "✅ NDK downloaded successfully via sdkmanager!"
-          echo "📊 NDK location: $HOME/.buildozer/android/sdk/ndk/25b"
-          
-          echo "✅ Android NDK setup completed via sdkmanager!"
-        else
-          echo "⚠️ NDK not found in SDK directory, checking alternative locations..."
-          
-          # Check if NDK was downloaded to a different location
-          find $HOME/.buildozer -name "*ndk*" -type d 2>/dev/null | head -10
-          
-          echo "❌ NDK download via sdkmanager may have failed"
-          echo "📋 sdkmanager output:"
-          tail -20 ndk_download.log
-          
-          # Fallback: Try direct download with correct URL
-          echo "🔄 Trying fallback direct download..."
-          NDK_URL="https://dl.google.com/android/repository/android-ndk-r25b-linux.zip"
-          NDK_FILE="android-ndk-r25b-linux.zip"
-          
-          echo "📋 Downloading NDK r25b (alternative version)..."
-          if curl -L --retry 3 --retry-delay 5 --connect-timeout 30 --max-time 600 \
-               --progress-bar \
-               -o "$NDK_FILE" \
-               "$NDK_URL"; then
-            echo "✅ NDK download completed"
-            
-            # Verify file size
-            file_size=$(stat -c%s "$NDK_FILE" 2>/dev/null || stat -f%z "$NDK_FILE")
-            if [ "$file_size" -gt 1000000000 ]; then
-              echo "✅ NDK file size check passed: $((file_size/1024/1024)) MB"
-              
-              # Extract NDK to sdk directory structure
-              echo "📦 Extracting NDK..."
-              mkdir -p $HOME/.buildozer/android/sdk/ndk/25b
-              unzip -q "$NDK_FILE" -d /tmp/
-              
-              # Move NDK to correct location
-              mv /tmp/android-ndk-r25b/* $HOME/.buildozer/android/sdk/ndk/25b/
-              
-              echo "✅ NDK fallback download successful!"
-            else
-              echo "❌ NDK file too small: $((file_size/1024/1024)) MB"
-              exit 1
-            fi
-          else
-            echo "❌ All NDK download attempts failed"
-            echo "⚠️ Continuing anyway - Buildozer may download NDK itself (and trigger the error)"
-          fi
-        fi
+        echo "📥 NDK pre-download configured - will be executed by fix script"
+        echo "🔧 The fix_buildozer_platform_directories.sh script contains robust NDK pre-download"
+        echo "📋 NDK will be downloaded to: $HOME/.buildozer/android/platform/android-sdk/ndk/25b"
         
     - name: Configure Buildozer platform directories (CRITICAL)
       run: |
@@ -344,27 +269,22 @@ EOF
         echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
         echo "ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
         
-    - name: Set up Buildozer environment
+    - name: Verify Buildozer environment
       run: |
-        # Source the environment setup script
-        echo "🔧 Setting up Buildozer environment..."
-        source setup_environment.sh
+        # Environment variables are already set by the platform directory configuration step
+        # Just verify they are properly set for Buildozer
+        echo "🔧 Verifying Buildozer environment variables..."
         
-        # CRITICAL: Ensure environment variables are properly set for Buildozer
-        # These should already be set from the platform directory configuration step
-        echo "🔧 Ensuring Buildozer environment variables are set..."
-        echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
-        echo "ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
-        echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
-        echo "ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
-        echo "PATH=$PATH:$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/platform/android-sdk/platform-tools:$HOME/.buildozer/android/platform/android-ndk/android-ndk-r25b" >> $GITHUB_ENV
-        
-        # Verify environment variables are set
+        # Verify environment variables are set (from platform directory configuration)
         echo "📋 Environment verification:"
         echo "ANDROID_HOME: $ANDROID_HOME"
         echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
         echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
         echo "ANDROID_NDK_ROOT: $ANDROID_NDK_ROOT"
+        
+        # Update PATH to include platform directories (not the old sdk directories)
+        echo "🔧 Updating PATH with platform directories..."
+        export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_NDK_HOME"
         echo "PATH includes platform directories:"
         echo "$PATH" | tr ':' '\n' | grep -E "(platform|android)" || echo "⚠️ Platform paths not found in PATH"
         
@@ -389,8 +309,6 @@ EOF
         echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
         echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
         echo "ANDROID_NDK_ROOT: $ANDROID_NDK_ROOT"
-        echo "PATH includes platform directories:"
-        echo "$PATH" | tr ':' '\n' | grep -E "(platform|android)" || echo "⚠️ Platform paths not found in PATH"
         
         # Verify Buildozer can see our SDK/NDK in platform directories
         echo "🔍 Verifying platform SDK/NDK locations..."
@@ -398,6 +316,22 @@ EOF
           echo "✅ ANDROID_HOME (platform) exists: $ANDROID_HOME"
           echo "📊 Platform SDK contents:"
           ls -la "$ANDROID_HOME/cmdline-tools/" 2>/dev/null || echo "⚠️ cmdline-tools not found in platform"
+          
+          # CRITICAL: License acceptance already handled by fix script
+          echo "🔧 License acceptance already handled by fix_buildozer_platform_directories.sh"
+          echo "📝 The fix script's accept_buildozer_licenses() function creates comprehensive license files"
+          
+          # Verify license files exist in platform directory
+          echo "🔍 Verifying license files in platform/android-sdk/licenses..."
+          if [ -d "$ANDROID_HOME/licenses" ]; then
+            echo "✅ License directory exists in platform/android-sdk"
+            echo "📋 License files:"
+            ls -la "$ANDROID_HOME/licenses/" 2>/dev/null || echo "⚠️ No license files found"
+          else
+            echo "⚠️ License directory not found in platform/android-sdk"
+            echo "📝 Creating license directory..."
+            mkdir -p "$ANDROID_HOME/licenses"
+          fi
         else
           echo "❌ ANDROID_HOME (platform) not found: $ANDROID_HOME"
           echo "📁 Expected path: $HOME/.buildozer/android/platform/android-sdk"

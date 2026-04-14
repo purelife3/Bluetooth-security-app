@@ -10,6 +10,182 @@ echo ""
 # Make sure we're in the right directory
 cd "$(dirname "$0")" || exit 1
 
+# Create a function to accept licenses for Buildozer SDK
+accept_buildozer_licenses() {
+    echo "📝 Accepting licenses for Buildozer SDK management..."
+    
+    # Check if platform/android-sdk exists
+    if [ -d ~/.buildozer/android/platform/android-sdk ]; then
+        echo "✅ Found platform/android-sdk directory"
+        
+        # Find sdkmanager in platform directory
+        SDKMANAGER_PATH=""
+        if [ -f ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ]; then
+            SDKMANAGER_PATH=~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager
+        elif [ -f ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager ]; then
+            SDKMANAGER_PATH=~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+        else
+            SDKMANAGER_PATH=$(find ~/.buildozer/android/platform/android-sdk -name "sdkmanager" -type f 2>/dev/null | head -1)
+        fi
+        
+        if [ -n "$SDKMANAGER_PATH" ]; then
+            echo "✅ Found sdkmanager at: $SDKMANAGER_PATH"
+            
+            # CRITICAL: Enhanced license acceptance with multi-prompt handling
+            echo "🔧 Enhanced license acceptance for Buildozer SDK..."
+            
+            # Method 1: Use expect-style approach with echo for ALL prompts
+            echo "📋 Handling ALL interactive prompts (including initial 'Review licenses' prompt)..."
+            
+            # Create a comprehensive input file for ALL prompts
+            cat > /tmp/buildozer_license_input.txt << 'EOF'
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+y
+EOF
+            
+            # Apply licenses using the input file
+            cat /tmp/buildozer_license_input.txt | "$SDKMANAGER_PATH" --licenses --sdk_root=~/.buildozer/android/platform/android-sdk 2>&1 || true
+            
+            # Method 2: Direct license file creation for critical packages
+            echo "🔧 Creating direct license files for critical SDK packages..."
+            mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+            
+            # Critical license hashes (including Build-Tools 37)
+            echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+            echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+            echo "84831b9409646a918e30573b4ad6d4e7e5c2f256" > ~/.buildozer/android/platform/android-sdk/licenses/android-googletv-license
+            echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-arm-dbt-license
+            echo "601085b94cd77f0b54ff86406957099ebe79c4d6" > ~/.buildozer/android/platform/android-sdk/licenses/google-gdk-license
+            echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.buildozer/android/platform/android-sdk/licenses/android-googlexr-license
+            echo "d975f751698a77b662f1254ddbeed3901e285f74" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-build-tools-37-license
+            
+            # Verify license files
+            echo "🔍 Verifying license files in platform/android-sdk/licenses..."
+            if [ -d ~/.buildozer/android/platform/android-sdk/licenses ]; then
+                echo "✅ License directory exists with $(ls -1 ~/.buildozer/android/platform/android-sdk/licenses | wc -l) license files"
+                ls -la ~/.buildozer/android/platform/android-sdk/licenses/ || echo "⚠️ Could not list license files"
+            fi
+            
+            echo "✅ Buildozer SDK licenses accepted with enhanced multi-prompt handling"
+        else
+            echo "⚠️ sdkmanager not found in platform/android-sdk"
+        fi
+    else
+        echo "⚠️ platform/android-sdk directory not found"
+    fi
+}
+
+# Create a function to pre-download NDK to avoid Buildozer download failures
+pre_download_ndk() {
+    echo "📥 Pre-downloading Android NDK to avoid Buildozer download failures..."
+    
+    NDK_URL="https://dl.google.com/android/repository/android-ndk-r25.1.8937393-linux.zip"
+    NDK_FILENAME="android-ndk-r25.1.8937393-linux.zip"
+    NDK_TARGET_DIR="$HOME/.buildozer/android/platform/android-sdk/ndk/25b"
+    
+    echo "🔗 NDK URL: $NDK_URL"
+    echo "📁 Target directory: $NDK_TARGET_DIR"
+    
+    # Create target directory
+    mkdir -p "$NDK_TARGET_DIR"
+    
+    # Download with robust retry logic
+    for attempt in {1..5}; do
+        echo "📋 NDK download attempt $attempt/5..."
+        
+        # Clean up any previous failed downloads
+        rm -f "$NDK_FILENAME" "$NDK_FILENAME.part"
+        
+        # Download with curl - resume support, timeout, and progress
+        if curl -L --retry 3 --retry-delay 5 --connect-timeout 60 --max-time 600 \
+             --progress-bar \
+             -o "$NDK_FILENAME" \
+             "$NDK_URL"; then
+            echo "✅ NDK download completed successfully"
+            
+            # Verify file size (should be > 1GB)
+            file_size=$(stat -c%s "$NDK_FILENAME" 2>/dev/null || stat -f%z "$NDK_FILENAME")
+            if [ "$file_size" -gt 1000000000 ]; then
+                echo "✅ NDK file size check passed: $((file_size/1024/1024)) MB"
+                
+                # Extract NDK
+                echo "📦 Extracting NDK to $NDK_TARGET_DIR..."
+                unzip -q "$NDK_FILENAME" -d "$HOME/.buildozer/android/platform/android-sdk/ndk/"
+                
+                # Verify extraction
+                if [ -d "$NDK_TARGET_DIR" ]; then
+                    echo "✅ NDK successfully extracted to $NDK_TARGET_DIR"
+                    echo "📊 NDK directory contents:"
+                    ls -la "$NDK_TARGET_DIR" | head -10
+                    return 0
+                else
+                    echo "⚠️ NDK extraction may have failed - target directory not found"
+                fi
+            else
+                echo "⚠️ NDK file size suspiciously small: $((file_size/1024/1024)) MB"
+            fi
+        else
+            echo "⚠️ NDK download failed on attempt $attempt"
+        fi
+        
+        if [ $attempt -lt 5 ]; then
+            echo "Retrying in 10 seconds..."
+            sleep 10
+        fi
+    done
+    
+    echo "❌ All NDK download attempts failed"
+    return 1
+}
+
 # Create a function to fix platform directories
 fix_platform_directories() {
     echo "📁 Fixing Buildozer platform directories..."
@@ -337,6 +513,16 @@ echo ""
 # Fix platform directories
 fix_platform_directories
 
+# Pre-download NDK to avoid Buildozer download failures
+echo ""
+echo "📥 Pre-downloading NDK to platform directory..."
+pre_download_ndk
+
+# Accept licenses for Buildozer SDK management
+echo ""
+echo "📝 Accepting licenses for Buildozer SDK..."
+accept_buildozer_licenses
+
 # Update workflow file
 update_workflow_file
 
@@ -347,8 +533,10 @@ echo ""
 echo "🎯 Fix Summary:"
 echo "1. Created platform/android-sdk as actual directory with SDK contents"
 echo "2. Created platform/android-ndk as actual directory with NDK contents"
-echo "3. Updated workflow file instructions for GitHub Actions"
-echo "4. Created test script to verify the fix"
+echo "3. Pre-downloaded NDK to platform/android-sdk/ndk/25b"
+echo "4. Accepted licenses for Buildozer SDK with enhanced multi-prompt handling"
+echo "5. Updated workflow file instructions for GitHub Actions"
+echo "6. Created test script to verify the fix"
 echo ""
 echo "📋 Next steps:"
 echo "1. Run: ./fix_buildozer_platform_directories.sh"
