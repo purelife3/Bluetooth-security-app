@@ -560,6 +560,9 @@ EOF
         echo "   Environment: ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
         echo "   NDK Source: $HOME/.buildozer/android/sdk/ndk/25b (SDK Manager download)"
         echo "   NDK Bridge: $ANDROID_NDK_HOME (Buildozer expectation)"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         
         # CRITICAL: Verify build-tools/37.0.0 directory exists with actual binaries
