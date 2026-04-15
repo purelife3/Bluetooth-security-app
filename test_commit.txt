@@ -1,0 +1,11 @@
+Test commit to trigger Build-Tools 37 license acceptance fix verification
+Timestamp: $(date)
+All license acceptance commands updated to 20 "y" inputs:
+- Line 182: General license acceptance ✓
+- Line 193: Package-specific acceptance function ✓
+- Line 202: Build-Tools specific acceptance ✓
+- Line 231: Explicit Build-Tools 37.0.0 acceptance before installation ✓
+- Line 234: SDK installation command ✓ (already fixed)
+- Line 253: NDK installation command ✓
+
+This should resolve the "Aidl not found" error by ensuring Build-Tools 37 licenses are fully accepted.

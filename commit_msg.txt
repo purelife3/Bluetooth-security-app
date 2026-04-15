@@ -1,0 +1,7 @@
+Fix: Build-Tools 37 license acceptance - targeted fixes
+
+- Changed echo 'y' to yes command for multiple license prompts (line 201)
+- Added Build-Tools 37 specific hash to license list (line 152)
+- Added explicit license acceptance immediately before Build-Tools 37 installation (lines 228-230)
+
+This addresses the 'Skipping following packages as the license is not accepted: Android SDK Build-Tools 37' error.

@@ -34,7 +34,27 @@ else
 fi
 
 echo ""
-echo "4. Setup Environment Script (setup_environment.sh):"
+echo "4. Buildozer.spec android.ndk value:"
+if grep -n "android.ndk =" buildozer.spec; then
+    echo "   ✅ Found android.ndk in buildozer.spec"
+    NDK_VALUE=$(grep "android.ndk =" buildozer.spec | cut -d'=' -f2 | tr -d ' ')
+    echo "   Value: $NDK_VALUE"
+    
+    # Check if value is correct (should be 25.1.8937393)
+    if [ "$NDK_VALUE" = "25.1.8937393" ]; then
+        echo "   ✅ NDK version is correct (25.1.8937393)"
+    elif [ "$NDK_VALUE" = "25b" ]; then
+        echo "   ⚠️  NDK version is 25b (same as 25.1.8937393 but different naming)"
+        echo "   ℹ️  This should work but may cause confusion with SDK manager"
+    else
+        echo "   ❌ Unexpected NDK version: $NDK_VALUE"
+    fi
+else
+    echo "   ❌ android.ndk not found in buildozer.spec"
+fi
+
+echo ""
+echo "5. Setup Environment Script (setup_environment.sh):"
 if [ -f setup_environment.sh ]; then
     echo "   ✅ setup_environment.sh exists"
     echo "   ANDROID_NDK_HOME: $(grep "ANDROID_NDK_HOME" setup_environment.sh | grep -v "^#" | head -1)"
@@ -43,7 +63,7 @@ else
 fi
 
 echo ""
-echo "5. Fix Buildozer Config Script (fix_buildozer_config.sh):"
+echo "6. Fix Buildozer Config Script (fix_buildozer_config.sh):"
 if [ -f fix_buildozer_config.sh ]; then
     echo "   ✅ fix_buildozer_config.sh exists"
     echo "   NDK path in script: $(grep "android.ndk_path" fix_buildozer_config.sh | grep -v "^#" | head -1)"

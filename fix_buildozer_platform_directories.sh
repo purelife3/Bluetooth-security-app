@@ -127,17 +127,52 @@ EOF
 pre_download_ndk() {
     echo "📥 Pre-downloading Android NDK to avoid Buildozer download failures..."
     
-    NDK_URL="https://dl.google.com/android/repository/android-ndk-r25.1.8937393-linux.zip"
-    NDK_FILENAME="android-ndk-r25.1.8937393-linux.zip"
-    NDK_TARGET_DIR="$HOME/.buildozer/android/platform/android-sdk/ndk/25b"
+    # CRITICAL FIX: SDK manager installs "25b" but Buildozer expects "25.1.8937393"
+    # These are the same NDK version with different naming conventions
+    # We need to download the correct version that matches SDK manager's naming
+    
+    NDK_URL="https://dl.google.com/android/repository/android-ndk-r25b-linux.zip"
+    NDK_FILENAME="android-ndk-r25b-linux.zip"
+    NDK_TARGET_DIR="$HOME/.buildozer/android/platform/android-sdk/ndk/25.1.8937393"
     
     echo "🔗 NDK URL: $NDK_URL"
     echo "📁 Target directory: $NDK_TARGET_DIR"
+    echo "⚠️  IMPORTANT: Downloading NDK 25b (same as 25.1.8937393) to match SDK manager"
+    echo "🔍 DEBUG: SDK Manager should have already downloaded NDK to: $HOME/.buildozer/android/sdk/ndk/25b"
+    echo "🔍 DEBUG: Checking if SDK Manager NDK exists..."
+    if [ -d "$HOME/.buildozer/android/sdk/ndk/25b" ]; then
+        echo "✅ DEBUG: Found SDK Manager NDK at: $HOME/.buildozer/android/sdk/ndk/25b"
+        echo "📊 DEBUG: SDK Manager NDK contents:"
+        ls -la "$HOME/.buildozer/android/sdk/ndk/25b/" | head -5
+    else
+        echo "⚠️ DEBUG: SDK Manager NDK not found at: $HOME/.buildozer/android/sdk/ndk/25b"
+        echo "📝 DEBUG: Will download NDK directly from Google"
+    fi
     
     # Create target directory
     mkdir -p "$NDK_TARGET_DIR"
     
-    # Download with robust retry logic
+    # FIRST: Check if we can use SDK Manager's already downloaded NDK
+    echo "🔍 DEBUG: Checking if we can use SDK Manager's NDK instead of downloading..."
+    if [ -d "$HOME/.buildozer/android/sdk/ndk/25b" ]; then
+        echo "✅ DEBUG: Using SDK Manager's NDK from: $HOME/.buildozer/android/sdk/ndk/25b"
+        echo "📋 DEBUG: Copying SDK Manager NDK to bridge directory..."
+        cp -r "$HOME/.buildozer/android/sdk/ndk/25b/." "$NDK_TARGET_DIR/" 2>/dev/null || true
+        
+        # Verify copy
+        if [ -d "$NDK_TARGET_DIR" ] && [ "$(ls -A "$NDK_TARGET_DIR" 2>/dev/null)" ]; then
+            echo "✅ DEBUG: Successfully copied SDK Manager NDK to bridge directory"
+            echo "📊 DEBUG: Bridge directory contents after copy:"
+            ls -la "$NDK_TARGET_DIR" | head -10
+            echo "✅ NDK bridge created using SDK Manager's download"
+            return 0
+        else
+            echo "⚠️ DEBUG: Failed to copy SDK Manager NDK, will download instead"
+        fi
+    fi
+    
+    # Download with robust retry logic (fallback if SDK Manager NDK not available)
+    echo "📋 DEBUG: Downloading NDK directly from Google (fallback)..."
     for attempt in {1..5}; do
         echo "📋 NDK download attempt $attempt/5..."
         
@@ -157,8 +192,16 @@ pre_download_ndk() {
                 echo "✅ NDK file size check passed: $((file_size/1024/1024)) MB"
                 
                 # Extract NDK
-                echo "📦 Extracting NDK to $NDK_TARGET_DIR..."
+                echo "📦 Extracting NDK to $HOME/.buildozer/android/platform/android-sdk/ndk/..."
                 unzip -q "$NDK_FILENAME" -d "$HOME/.buildozer/android/platform/android-sdk/ndk/"
+                
+                # CRITICAL: The zip creates android-ndk-r25b/ directory, but Buildozer expects 25.1.8937393/
+                # Rename the directory to match Buildozer's expectations
+                echo "🔄 Renaming android-ndk-r25b/ to 25.1.8937393/..."
+                if [ -d "$HOME/.buildozer/android/platform/android-sdk/ndk/android-ndk-r25b" ]; then
+                    mv "$HOME/.buildozer/android/platform/android-sdk/ndk/android-ndk-r25b" "$NDK_TARGET_DIR"
+                    echo "✅ Successfully renamed NDK directory"
+                fi
                 
                 # Verify extraction
                 if [ -d "$NDK_TARGET_DIR" ]; then
